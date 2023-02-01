@@ -1,0 +1,353 @@
+openapi: 3.0.2
+info:
+  title: 新歓スタンプラリーAPI
+  version: '1.0'
+  license:
+    name: MIT
+  contact:
+    name: StudioAquatan
+    url: 'https://www.aquatan.studio'
+    email: f0reach@f0reach.me
+servers:
+  - url: 'http://localhost:3000'
+paths:
+  /user:
+    post:
+      summary: ユーザ作成
+      operationId: post-user
+      description: 匿名ユーザを作成し，認証用トークンを返します
+      responses:
+        '200':
+          description: ユーザが正常に作成された
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: 認証トークン
+                  user:
+                    $ref: '#/components/schemas/User'
+                required:
+                  - token
+                  - user
+        '400':
+          description: Bad Request
+    get:
+      summary: ユーザ情報
+      operationId: get-user
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+      parameters: []
+      security:
+        - Authorization: []
+    patch:
+      summary: ユーザ更新
+      description: ユーザ情報を更新します．現在はニックネーム更新のみです
+      operationId: patch-user
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+      security:
+        - Authorization: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nickname:
+                  type: string
+                  maxLength: 15
+                  nullable: true
+                  description: 新しいニックネーム，nullでニックネーム削除
+
+  /stamp:
+    get:
+      summary: スタンプカード取得
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StampCard'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not Found
+      operationId: get-stamp
+      security:
+        - Authorization: []
+      description: ''
+  /recommendation:
+    get:
+      summary: おすすめ団体リスト
+      description: 診断結果に基づくおすすめの団体IDリストを取得する
+      operationId: get-recommendation-question
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StampCard'
+        '401':
+          description: Unauthorized
+      security:
+        - Authorization: []
+    put:
+      summary: 診断処理
+      operationId: put-recommendation-question
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StampCard'
+        '400':
+          description: 質問が不足している場合など
+        '401':
+          description: Unauthorized
+        '429':
+          description: 再診断の残り回数が0になった
+      description: 診断からスタンプカード・ソート済み団体リストを作成する
+      security:
+        - Authorization: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Question'
+        description: 診断用質問の回答リスト
+  /visits:
+    get:
+      summary: 訪問した団体一覧
+      description: 訪問した団体一覧を取得します
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Visit'
+        '401':
+          description: Unauthorized
+      operationId: get-visits
+      security:
+        - Authorization: []
+  '/visits/{token}':
+    parameters:
+      - schema:
+          type: string
+        name: token
+        in: path
+        required: true
+    post:
+      summary: 訪問記録
+      description: 訪問を記録します．記録が重複する場合，上書きされません．
+      operationId: post-visits-token
+      security:
+        - Authorization: []
+      responses:
+        '201':
+          description: 訪問を記録した
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Visit'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Token is not valid
+        '412':
+          description: 訪問の記録がイベント未開始などの都合でできないことを示します
+  '/stamp/{orgId}':
+    parameters:
+      - schema:
+          type: string
+        name: orgId
+        in: path
+        required: true
+        description: 団体ID
+    delete:
+      summary: 団体除外
+      operationId: delete-stamp-orgId
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StampCard'
+        '401':
+          description: Unauthorized
+        '429':
+          description: Too Many Requests
+      description: 特定団体のスタンプを除外し，補欠されたスタンプカードを返します
+      security:
+        - Authorization: []
+  /rewards:
+    get:
+      summary: 景品交換の状態を見る
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  obtained:
+                    type: boolean
+                    description: 景品交換済みか
+                  available:
+                    type: boolean
+                    description: 景品交換ができるか
+                  unavailableReason:
+                    type: string
+                    description: 景品交換ができない理由
+                    example: 売り切れ
+                required:
+                  - obtained
+                  - available
+        '401':
+          description: Unauthorized
+      operationId: get-rewards
+      description: 景品交換の状態を取得します．景品交換ができるかどうかも同時に取得できます．
+    put:
+      summary: 景品交換を行います
+      operationId: put-rewards
+      responses:
+        '200':
+          description: OK
+        '401':
+          description: Unauthorized
+        '425':
+          description: 景品交換がまだ始まっていない・もう終わっていることを示します
+        '412':
+          description: 景品の交換ができないことを示します
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reason:
+                    type: string
+                    example: 景品は既に交換済みです
+                required:
+                  - reason
+components:
+  schemas:
+    User:
+      title: 利用者
+      type: object
+      description: スタンプラリー参加者の情報です
+      properties:
+        id:
+          type: string
+          description: ユーザーのUUID
+          format: uuid
+          readOnly: true
+        nickname:
+          type: string
+          nullable: true
+          description: OGP画像生成で使われるニックネームです．設定されていない場合nullになります
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+          description: ユーザー登録の日時です
+      required:
+        - id
+        - nickname
+        - createdAt
+    StampCard:
+      title: スタンプカード
+      type: object
+      description: スタンプカードの情報を示します．スタンプカードは，9団体をまとめたものです
+      properties:
+        stamp:
+          type: array
+          items:
+            $ref: '#/components/schemas/Stamp'
+        stampIgnoreRemains:
+          type: number
+          description: あと何回スタンプから部活を消せるかを示します
+          default: 5
+        stampRenewRemains:
+          type: number
+          description: あと何回診断をやり直せるかを示します
+          default: 5
+    Stamp:
+      title: スタンプ
+      type: object
+      description: スタンプカードの1アイテムです．1団体を示します
+      properties:
+        orgId:
+          type: string
+          readOnly: true
+          description: 団体のID
+        coefficient:
+          type: number
+          default: 0
+          readOnly: true
+          description: 診断での一致度を示します
+      required:
+        - orgId
+    Visit:
+      title: 訪問
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        orgId:
+          type: string
+          description: 訪問のID
+        visitedAt:
+          type: string
+          format: date-time
+          description: 訪問した時刻
+      required:
+        - id
+      description: 団体を訪問した記録です
+    Question:
+      title: 診断質問問答
+      type: object
+      description: Question and answer
+      properties:
+        questionId:
+          type: string
+        answerId:
+          type: string
+      required:
+        - questionId
+        - answerId
+  securitySchemes:
+    Authorization:
+      name: Authorization
+      type: apiKey
+      in: header
