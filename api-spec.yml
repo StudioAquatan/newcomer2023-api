@@ -75,38 +75,33 @@ paths:
                   maxLength: 15
                   nullable: true
                   description: 新しいニックネーム，nullでニックネーム削除
-
-  /stamp:
-    get:
-      summary: スタンプカード取得
-      tags: []
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StampCard'
-        '401':
-          description: Unauthorized
-        '404':
-          description: Not Found
-      operationId: get-stamp
-      security:
-        - Authorization: []
-      description: ''
   /recommendation:
     get:
       summary: おすすめ団体リスト
       description: 診断結果に基づくおすすめの団体IDリストを取得する
-      operationId: get-recommendation-question
+      operationId: get-recommendation
+      parameters:
+        - in: query
+          name: includeQuestions
+          schema:
+            type: boolean
+          description: 質問の回答を含めるか選択します
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StampCard'
+                type: object
+                properties:
+                  recommendation:
+                    $ref: '#/components/schemas/Recommendation'
+                  questions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Question'
+                required:
+                  - recommendation
         '401':
           description: Unauthorized
       security:
@@ -120,7 +115,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StampCard'
+                type: object
+                properties:
+                  recommendation:
+                    $ref: '#/components/schemas/Recommendation'
+                required:
+                  - recommendation
         '400':
           description: 質問が不足している場合など
         '401':
@@ -183,7 +183,7 @@ paths:
           description: Token is not valid
         '412':
           description: 訪問の記録がイベント未開始などの都合でできないことを示します
-  '/stamp/{orgId}':
+  '/recommendation/{orgId}':
     parameters:
       - schema:
           type: string
@@ -193,14 +193,14 @@ paths:
         description: 団体ID
     delete:
       summary: 団体除外
-      operationId: delete-stamp-orgId
+      operationId: exclude-recommendation
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StampCard'
+                $ref: '#/components/schemas/Recommendation'
         '401':
           description: Unauthorized
         '429':
@@ -284,27 +284,27 @@ components:
         - id
         - nickname
         - createdAt
-    StampCard:
-      title: スタンプカード
+    Recommendation:
+      title: おすすめ団体リスト
       type: object
-      description: スタンプカードの情報を示します．スタンプカードは，9団体をまとめたものです
+      description: スタンプカードの情報を示します．
       properties:
-        stamp:
+        orgs:
           type: array
           items:
-            $ref: '#/components/schemas/Stamp'
-        stampIgnoreRemains:
+            $ref: '#/components/schemas/Organization'
+        ignoreRemains:
           type: number
-          description: あと何回スタンプから部活を消せるかを示します
+          description: あと何回興味のない部活を消せるかを示します
           default: 5
-        stampRenewRemains:
+        renewRemains:
           type: number
           description: あと何回診断をやり直せるかを示します
           default: 5
-    Stamp:
-      title: スタンプ
+    Organization:
+      title: 団体(スタンプ)
       type: object
-      description: スタンプカードの1アイテムです．1団体を示します
+      description: おすすめ団体リスト・スタンプカードの1アイテムです．1団体を示します
       properties:
         orgId:
           type: string
@@ -315,6 +315,10 @@ components:
           default: 0
           readOnly: true
           description: 診断での一致度を示します
+        isVisited:
+          type: boolean
+          description: 訪問したかどうかを示します
+          readOnly: true
       required:
         - orgId
     Visit:
