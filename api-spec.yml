@@ -89,6 +89,20 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/OrganizationFull'
+  /questions:
+    get:
+      summary: 質問リスト
+      description: 質問と回答項目のリストを取得する
+      operationId: get-questions
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Question'
   /recommendation:
     get:
       summary: おすすめ団体リスト
@@ -118,7 +132,7 @@ paths:
                   questions:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Question'
+                      $ref: '#/components/schemas/QuestionResult'
                 required:
                   - recommendation
         '401':
@@ -157,7 +171,7 @@ paths:
             schema:
               type: array
               items:
-                $ref: '#/components/schemas/Question'
+                $ref: '#/components/schemas/QuestionResult'
         description: 診断用質問の回答リスト
   /visits:
     get:
@@ -447,17 +461,56 @@ components:
         - id
       description: 団体を訪問した記録です
     Question:
+      title: 診断の質問
+      type: object
+      properties:
+        id:
+          type: string
+        questionText:
+          type: string
+          description: 質問文
+        questionType:
+          type: string
+          enum:
+            - yesno
+            - five
+            - choice
+          description: |
+            質問の種類を示します．
+            yesno: はい or いいえ
+            five: 5件法
+            choice: 選択肢
+        answers:
+          type: array
+          description: 選択肢での回答リスト
+          items:
+            type: object
+            properties:
+              id:
+                type: number
+                description: 一意な管理番号
+              text:
+                type: string
+                description: 選択肢
+            required:
+              - id
+              - text
+      required:
+        - id
+        - questionText
+        - questionType
+    QuestionResult:
       title: 診断質問問答
       type: object
       description: Question and answer
       properties:
         questionId:
           type: string
-        answerId:
-          type: string
+        answer:
+          type: number
       required:
         - questionId
-        - answerId
+        - answer
     Image:
       title: 画像
       type: object
