@@ -75,10 +75,24 @@ paths:
                   maxLength: 15
                   nullable: true
                   description: 新しいニックネーム，nullでニックネーム削除
+  /orgs:
+    get:
+      summary: 団体リスト
+      description: 全団体のリストを取得する
+      operationId: get-orgs
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OrganizationFull'
   /recommendation:
     get:
       summary: おすすめ団体リスト
-      description: 診断結果に基づくおすすめの団体IDリストを取得する
+      description: 診断結果に基づくおすすめの団体リストを取得する
       operationId: get-recommendation
       parameters:
         - in: query
@@ -86,6 +100,11 @@ paths:
           schema:
             type: boolean
           description: 質問の回答を含めるか選択します
+        - in: query
+          name: includeOrgsContent
+          schema:
+            type: boolean
+          description: 団体の詳細情報を含めるか選択します
       responses:
         '200':
           description: OK
@@ -104,6 +123,8 @@ paths:
                   - recommendation
         '401':
           description: Unauthorized
+        '404':
+          description: まだ診断がされていない
       security:
         - Authorization: []
     put:
@@ -208,6 +229,23 @@ paths:
       description: 特定団体のスタンプを除外し，補欠されたスタンプカードを返します
       security:
         - Authorization: []
+    patch:
+      summary: 団体除外の取り消し
+      operationId: delete-exclude-recommendation
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recommendation'
+        '401':
+          description: Unauthorized
+        '429':
+          description: Too Many Requests
+      description: 特定団体のスタンプを除外したのを削除し，補欠されたスタンプカードを返します
+      security:
+        - Authorization: []
   /rewards:
     get:
       summary: 景品交換の状態を見る
@@ -292,7 +330,7 @@ components:
         orgs:
           type: array
           items:
-            $ref: '#/components/schemas/Organization'
+            $ref: '#/components/schemas/RecommendationItem'
         ignoreRemains:
           type: number
           description: あと何回興味のない部活を消せるかを示します
@@ -301,26 +339,96 @@ components:
           type: number
           description: あと何回診断をやり直せるかを示します
           default: 5
-    Organization:
-      title: 団体(スタンプ)
+      required:
+        - orgs
+        - ignoreRemains
+        - renewRemains
+    RecommendationItem:
+      title: おすすめ団体(スタンプ)
       type: object
-      description: おすすめ団体リスト・スタンプカードの1アイテムです．1団体を示します
+      description: おすすめ団体の1つを示します
       properties:
-        orgId:
-          type: string
-          readOnly: true
-          description: 団体のID
+        org:
+          oneOf:
+            - $ref: '#/components/schemas/OrganizationFull'
+            - $ref: '#/components/schemas/OrganizationSimple'
         coefficient:
           type: number
           default: 0
-          readOnly: true
-          description: 診断での一致度を示します
+          description: 診断での一致度
         isVisited:
           type: boolean
-          description: 訪問したかどうかを示します
-          readOnly: true
+          description: 訪問したかどうか
+        isExcluded:
+          type: boolean
+          description: 興味がないを押したかどうか
+        stampSlot:
+          type: number
+          default: -1
+          description: スタンプのどの位置に表示するか(0 - 8 or -1:非表示)
       required:
-        - orgId
+        - org
+        - coefficient
+        - isVisited
+        - isExcluded
+    OrganizationSimple:
+      title: シンプル団体
+      description: IDのみの団体情報です
+      properties:
+        id:
+          type: string
+          readOnly: true
+          description: 団体のID
+      required:
+        - id
+    OrganizationFull:
+      title: 団体詳細
+      allOf:
+        - $ref: '#/components/schemas/OrganizationSimple'
+        - title: 団体詳細
+          type: object
+          description: 団体の詳細を示します
+          properties:
+            fullName:
+              type: string
+              description: 団体の正式名
+            shortName:
+              type: string
+              description: 団体の短縮名(表示名)
+            shortDescription:
+              type: string
+              description: 短い紹介文
+            logo:
+              $ref: '#/components/schemas/Image'
+            stampBackground:
+              $ref: '#/components/schemas/Image'
+            stampColor:
+              type: string
+              description: スタンプの背景色
+            altLogo:
+              type: string
+              description: ロゴがないときに表示する絵文字
+            description:
+              type: string
+              description: 長い紹介文
+            location:
+              type: string
+              description: 活動場所
+            fees:
+              type: string
+              description: 部費情報
+            activeDays:
+              type: string
+              description: 活動日
+            links:
+              type: array
+              description: 団体のリンク集
+              items:
+                type: string
+                format: url
+          required:
+            - fullName
+            - shortName
     Visit:
       title: 訪問
       type: object
@@ -350,6 +458,21 @@ components:
       required:
         - questionId
         - answerId
+    Image:
+      title: 画像
+      type: object
+      description: 画像の表示に必要な情報をまとめたもの
+      properties:
+        src:
+          type: string
+        width:
+          type: number
+        height:
+          type: number
+      required:
+        - src
+        - width
+        - height
   securitySchemes:
     Authorization:
       name: Authorization
