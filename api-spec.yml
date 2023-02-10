@@ -385,6 +385,7 @@ components:
         - coefficient
         - isVisited
         - isExcluded
+        - stampSlot
     OrganizationSimple:
       title: シンプル団体
       description: IDのみの団体情報です
@@ -443,6 +444,8 @@ components:
           required:
             - fullName
             - shortName
+            - shortDescription
+            - description
     Visit:
       title: 訪問
       type: object
@@ -459,6 +462,8 @@ components:
           description: 訪問した時刻
       required:
         - id
+        - orgId
+        - visitedAt
       description: 団体を訪問した記録です
     Question:
       title: 診断の質問
