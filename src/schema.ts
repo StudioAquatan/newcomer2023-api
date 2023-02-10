@@ -3,201 +3,225 @@
  * Do not make direct changes to the file.
  */
 
-
 import { z } from 'zod';
 
 export namespace components.schemas {
   /**
-   * 利用者 
+   * 利用者
    * @description スタンプラリー参加者の情報です
    */
   export const User = {
     serializer: z.object({
-    id: z.string(),
-    nickname: z.string().optional(),
-    createdAt: z.string().or(z.date()).transform((d) => new Date(d).toISOString()),
-  }),
+      id: z.string(),
+      nickname: z.string().optional(),
+      createdAt: z
+        .string()
+        .or(z.date())
+        .transform((d) => new Date(d).toISOString()),
+    }),
     deserializer: z.object({
-    id: z.string(),
-    nickname: z.string().optional(),
-    createdAt: z.string().transform((d) => new Date(d)),
-  }),
+      id: z.string(),
+      nickname: z.string().optional(),
+      createdAt: z.string().transform((d) => new Date(d)),
+    }),
   };
   /**
-   * シンプル団体 
+   * シンプル団体
    * @description IDのみの団体情報です
    */
   export const OrganizationSimple = {
     serializer: z.object({
-    id: z.string(),
-  }),
+      id: z.string(),
+    }),
     deserializer: z.object({
-    id: z.string(),
-  }),
+      id: z.string(),
+    }),
   };
   /**
-   * 訪問 
+   * 訪問
    * @description 団体を訪問した記録です
    */
   export const Visit = {
     serializer: z.object({
-    id: z.string(),
-    orgId: z.string(),
-    visitedAt: z.string().or(z.date()).transform((d) => new Date(d).toISOString()),
-  }),
+      id: z.string(),
+      orgId: z.string(),
+      visitedAt: z
+        .string()
+        .or(z.date())
+        .transform((d) => new Date(d).toISOString()),
+    }),
     deserializer: z.object({
-    id: z.string(),
-    orgId: z.string(),
-    visitedAt: z.string().transform((d) => new Date(d)),
-  }),
+      id: z.string(),
+      orgId: z.string(),
+      visitedAt: z.string().transform((d) => new Date(d)),
+    }),
   };
   /** 診断の質問 */
   export const Question = {
     serializer: z.object({
-    id: z.string(),
-    questionText: z.string(),
-    questionType: z.enum(["yesno", "five", "choice"]),
-    answers: z.array(z.object({
-        id: z.number(),
-        text: z.string(),
-      })).optional(),
-  }),
+      id: z.string(),
+      questionText: z.string(),
+      questionType: z.enum(['yesno', 'five', 'choice']),
+      answers: z
+        .array(
+          z.object({
+            id: z.number(),
+            text: z.string(),
+          }),
+        )
+        .optional(),
+    }),
     deserializer: z.object({
-    id: z.string(),
-    questionText: z.string(),
-    questionType: z.enum(["yesno", "five", "choice"]),
-    answers: z.array(z.object({
-        id: z.number(),
-        text: z.string(),
-      })).optional(),
-  }),
+      id: z.string(),
+      questionText: z.string(),
+      questionType: z.enum(['yesno', 'five', 'choice']),
+      answers: z
+        .array(
+          z.object({
+            id: z.number(),
+            text: z.string(),
+          }),
+        )
+        .optional(),
+    }),
   };
   /**
-   * 診断質問問答 
+   * 診断質問問答
    * @description Question and answer
    */
   export const QuestionResult = {
     serializer: z.object({
-    questionId: z.string(),
-    answer: z.number(),
-  }),
+      questionId: z.string(),
+      answer: z.number(),
+    }),
     deserializer: z.object({
-    questionId: z.string(),
-    answer: z.number(),
-  }),
+      questionId: z.string(),
+      answer: z.number(),
+    }),
   };
   /**
-   * 画像 
+   * 画像
    * @description 画像の表示に必要な情報をまとめたもの
    */
   export const Image = {
     serializer: z.object({
-    src: z.string(),
-    width: z.number(),
-    height: z.number(),
-  }),
+      src: z.string(),
+      width: z.number(),
+      height: z.number(),
+    }),
     deserializer: z.object({
-    src: z.string(),
-    width: z.number(),
-    height: z.number(),
-  }),
+      src: z.string(),
+      width: z.number(),
+      height: z.number(),
+    }),
   };
   /** 団体詳細 */
   export const OrganizationFull = {
-    serializer: z.intersection(components["schemas"]["OrganizationSimple"].serializer, z.object({
-    fullName: z.string(),
-    shortName: z.string(),
-    shortDescription: z.string(),
-    logo: components["schemas"]["Image"].serializer.optional(),
-    stampBackground: components["schemas"]["Image"].serializer.optional(),
-    stampColor: z.string().optional(),
-    altLogo: z.string().optional(),
-    description: z.string(),
-    location: z.string().optional(),
-    fees: z.string().optional(),
-    activeDays: z.string().optional(),
-    links: z.array(z.string()).optional(),
-  })),
-    deserializer: z.intersection(components["schemas"]["OrganizationSimple"].deserializer, z.object({
-    fullName: z.string(),
-    shortName: z.string(),
-    shortDescription: z.string(),
-    logo: components["schemas"]["Image"].deserializer.optional(),
-    stampBackground: components["schemas"]["Image"].deserializer.optional(),
-    stampColor: z.string().optional(),
-    altLogo: z.string().optional(),
-    description: z.string(),
-    location: z.string().optional(),
-    fees: z.string().optional(),
-    activeDays: z.string().optional(),
-    links: z.array(z.string()).optional(),
-  })),
+    serializer: z.intersection(
+      components['schemas']['OrganizationSimple'].serializer,
+      z.object({
+        fullName: z.string(),
+        shortName: z.string(),
+        shortDescription: z.string(),
+        logo: components['schemas']['Image'].serializer.optional(),
+        stampBackground: components['schemas']['Image'].serializer.optional(),
+        stampColor: z.string().optional(),
+        altLogo: z.string().optional(),
+        description: z.string(),
+        location: z.string().optional(),
+        fees: z.string().optional(),
+        activeDays: z.string().optional(),
+        links: z.array(z.string()).optional(),
+      }),
+    ),
+    deserializer: z.intersection(
+      components['schemas']['OrganizationSimple'].deserializer,
+      z.object({
+        fullName: z.string(),
+        shortName: z.string(),
+        shortDescription: z.string(),
+        logo: components['schemas']['Image'].deserializer.optional(),
+        stampBackground: components['schemas']['Image'].deserializer.optional(),
+        stampColor: z.string().optional(),
+        altLogo: z.string().optional(),
+        description: z.string(),
+        location: z.string().optional(),
+        fees: z.string().optional(),
+        activeDays: z.string().optional(),
+        links: z.array(z.string()).optional(),
+      }),
+    ),
   };
   /**
-   * おすすめ団体(スタンプ) 
+   * おすすめ団体(スタンプ)
    * @description おすすめ団体の1つを示します
    */
   export const RecommendationItem = {
     serializer: z.object({
-    org: z.union([components["schemas"]["OrganizationFull"].serializer, components["schemas"]["OrganizationSimple"].serializer]),
-    coefficient: z.number(),
-    isVisited: z.boolean(),
-    isExcluded: z.boolean(),
-    stampSlot: z.number(),
-  }),
+      org: z.union([
+        components['schemas']['OrganizationFull'].serializer,
+        components['schemas']['OrganizationSimple'].serializer,
+      ]),
+      coefficient: z.number(),
+      isVisited: z.boolean(),
+      isExcluded: z.boolean(),
+      stampSlot: z.number(),
+    }),
     deserializer: z.object({
-    org: z.union([components["schemas"]["OrganizationFull"].deserializer, components["schemas"]["OrganizationSimple"].deserializer]),
-    coefficient: z.number(),
-    isVisited: z.boolean(),
-    isExcluded: z.boolean(),
-    stampSlot: z.number(),
-  }),
+      org: z.union([
+        components['schemas']['OrganizationFull'].deserializer,
+        components['schemas']['OrganizationSimple'].deserializer,
+      ]),
+      coefficient: z.number(),
+      isVisited: z.boolean(),
+      isExcluded: z.boolean(),
+      stampSlot: z.number(),
+    }),
   };
   /**
-   * おすすめ団体リスト 
+   * おすすめ団体リスト
    * @description スタンプカードの情報を示します．
    */
   export const Recommendation = {
     serializer: z.object({
-    orgs: z.array(components["schemas"]["RecommendationItem"].serializer),
-    ignoreRemains: z.number(),
-    renewRemains: z.number(),
-  }),
+      orgs: z.array(components['schemas']['RecommendationItem'].serializer),
+      ignoreRemains: z.number(),
+      renewRemains: z.number(),
+    }),
     deserializer: z.object({
-    orgs: z.array(components["schemas"]["RecommendationItem"].deserializer),
-    ignoreRemains: z.number(),
-    renewRemains: z.number(),
-  }),
+      orgs: z.array(components['schemas']['RecommendationItem'].deserializer),
+      ignoreRemains: z.number(),
+      renewRemains: z.number(),
+    }),
   };
 }
 
 export const operations = {
-
-  "get-user": {
+  'get-user': {
     /** ユーザ情報 */
     responses: {
       /** @description OK */
       200: {
         content: {
-          "application/json": components["schemas"]["User"].serializer,
+          'application/json': components['schemas']['User'].serializer,
         },
       },
       /** @description Unauthorized */
       401: z.never(),
     },
   },
-  "post-user": {
+  'post-user': {
     /**
-     * ユーザ作成 
+     * ユーザ作成
      * @description 匿名ユーザを作成し，認証用トークンを返します
      */
     responses: {
       /** @description ユーザが正常に作成された */
       200: {
         content: {
-          "application/json": z.object({
+          'application/json': z.object({
             token: z.string(),
-            user: components["schemas"]["User"].serializer,
+            user: components['schemas']['User'].serializer,
           }),
         },
       },
@@ -205,14 +229,14 @@ export const operations = {
       400: z.never(),
     },
   },
-  "patch-user": {
+  'patch-user': {
     /**
-     * ユーザ更新 
+     * ユーザ更新
      * @description ユーザ情報を更新します．現在はニックネーム更新のみです
      */
     requestBody: {
       content: {
-        "application/json": z.object({
+        'application/json': z.object({
           nickname: z.string().optional().optional(),
         }),
       },
@@ -221,61 +245,69 @@ export const operations = {
       /** @description OK */
       200: {
         content: {
-          "application/json": components["schemas"]["User"].serializer,
+          'application/json': components['schemas']['User'].serializer,
         },
       },
       /** @description Unauthorized */
       401: z.never(),
     },
   },
-  "get-orgs": {
+  'get-orgs': {
     /**
-     * 団体リスト 
+     * 団体リスト
      * @description 全団体のリストを取得する
      */
     responses: {
       /** @description OK */
       200: {
         content: {
-          "application/json": z.array(components["schemas"]["OrganizationFull"].serializer),
+          'application/json': z.array(
+            components['schemas']['OrganizationFull'].serializer,
+          ),
         },
       },
     },
   },
-  "get-questions": {
+  'get-questions': {
     /**
-     * 質問リスト 
+     * 質問リスト
      * @description 質問と回答項目のリストを取得する
      */
     responses: {
       /** @description OK */
       200: {
         content: {
-          "application/json": z.array(components["schemas"]["Question"].serializer),
+          'application/json': z.array(
+            components['schemas']['Question'].serializer,
+          ),
         },
       },
     },
   },
-  "get-recommendation": {
+  'get-recommendation': {
     /**
-     * おすすめ団体リスト 
+     * おすすめ団体リスト
      * @description 診断結果に基づくおすすめの団体リストを取得する
      */
-    parameters?: {
-        /** @description 質問の回答を含めるか選択します */
-        /** @description 団体の詳細情報を含めるか選択します */
-      query: z.object({
-        includeQuestions: z.boolean().optional(),
-        includeOrgsContent: z.boolean().optional(),
-      }).optional(),
+    parameters: {
+      /** @description 質問の回答を含めるか選択します */
+      /** @description 団体の詳細情報を含めるか選択します */
+      query: z
+        .object({
+          includeQuestions: z.boolean().optional(),
+          includeOrgsContent: z.boolean().optional(),
+        })
+        .optional(),
     },
     responses: {
       /** @description OK */
       200: {
         content: {
-          "application/json": z.object({
-            recommendation: components["schemas"]["Recommendation"].serializer,
-            questions: z.array(components["schemas"]["QuestionResult"].serializer).optional(),
+          'application/json': z.object({
+            recommendation: components['schemas']['Recommendation'].serializer,
+            questions: z
+              .array(components['schemas']['QuestionResult'].serializer)
+              .optional(),
           }),
         },
       },
@@ -285,23 +317,25 @@ export const operations = {
       404: z.never(),
     },
   },
-  "put-recommendation-question": {
+  'put-recommendation-question': {
     /**
-     * 診断処理 
+     * 診断処理
      * @description 診断からスタンプカード・ソート済み団体リストを作成する
      */
     /** @description 診断用質問の回答リスト */
     requestBody: {
       content: {
-        "application/json": z.array(components["schemas"]["QuestionResult"].serializer),
+        'application/json': z.array(
+          components['schemas']['QuestionResult'].serializer,
+        ),
       },
     },
     responses: {
       /** @description OK */
       200: {
         content: {
-          "application/json": z.object({
-            recommendation: components["schemas"]["Recommendation"].serializer,
+          'application/json': z.object({
+            recommendation: components['schemas']['Recommendation'].serializer,
           }),
         },
       },
@@ -313,32 +347,34 @@ export const operations = {
       429: z.never(),
     },
   },
-  "get-visits": {
+  'get-visits': {
     /**
-     * 訪問した団体一覧 
+     * 訪問した団体一覧
      * @description 訪問した団体一覧を取得します
      */
     responses: {
       /** @description OK */
       200: {
         content: {
-          "application/json": z.array(components["schemas"]["Visit"].serializer),
+          'application/json': z.array(
+            components['schemas']['Visit'].serializer,
+          ),
         },
       },
       /** @description Unauthorized */
       401: z.never(),
     },
   },
-  "post-visits-token": {
+  'post-visits-token': {
     /**
-     * 訪問記録 
+     * 訪問記録
      * @description 訪問を記録します．記録が重複する場合，上書きされません．
      */
     responses: {
       /** @description 訪問を記録した */
       201: {
         content: {
-          "application/json": components["schemas"]["Visit"].serializer,
+          'application/json': components['schemas']['Visit'].serializer,
         },
       },
       /** @description Unauthorized */
@@ -349,16 +385,17 @@ export const operations = {
       412: z.never(),
     },
   },
-  "exclude-recommendation": {
+  'exclude-recommendation': {
     /**
-     * 団体除外 
+     * 団体除外
      * @description 特定団体のスタンプを除外し，補欠されたスタンプカードを返します
      */
     responses: {
       /** @description OK */
       200: {
         content: {
-          "application/json": components["schemas"]["Recommendation"].serializer,
+          'application/json':
+            components['schemas']['Recommendation'].serializer,
         },
       },
       /** @description Unauthorized */
@@ -367,16 +404,17 @@ export const operations = {
       429: z.never(),
     },
   },
-  "delete-exclude-recommendation": {
+  'delete-exclude-recommendation': {
     /**
-     * 団体除外の取り消し 
+     * 団体除外の取り消し
      * @description 特定団体のスタンプを除外したのを削除し，補欠されたスタンプカードを返します
      */
     responses: {
       /** @description OK */
       200: {
         content: {
-          "application/json": components["schemas"]["Recommendation"].serializer,
+          'application/json':
+            components['schemas']['Recommendation'].serializer,
         },
       },
       /** @description Unauthorized */
@@ -385,16 +423,16 @@ export const operations = {
       429: z.never(),
     },
   },
-  "get-rewards": {
+  'get-rewards': {
     /**
-     * 景品交換の状態を見る 
+     * 景品交換の状態を見る
      * @description 景品交換の状態を取得します．景品交換ができるかどうかも同時に取得できます．
      */
     responses: {
       /** @description OK */
       200: {
         content: {
-          "application/json": z.object({
+          'application/json': z.object({
             obtained: z.boolean(),
             available: z.boolean(),
             unavailableReason: z.string().optional(),
@@ -405,7 +443,7 @@ export const operations = {
       401: z.never(),
     },
   },
-  "put-rewards": {
+  'put-rewards': {
     /** 景品交換を行います */
     responses: {
       /** @description OK */
@@ -415,7 +453,7 @@ export const operations = {
       /** @description 景品の交換ができないことを示します */
       412: {
         content: {
-          "application/json": z.object({
+          'application/json': z.object({
             reason: z.string(),
           }),
         },
@@ -424,93 +462,93 @@ export const operations = {
       425: z.never(),
     },
   },
-}
+};
 
 export const paths = {
-  "/user": {
+  '/user': {
     /** ユーザ情報 */
-    get: operations["get-user"],
+    get: operations['get-user'],
     /**
-     * ユーザ作成 
+     * ユーザ作成
      * @description 匿名ユーザを作成し，認証用トークンを返します
      */
-    post: operations["post-user"],
+    post: operations['post-user'],
     /**
-     * ユーザ更新 
+     * ユーザ更新
      * @description ユーザ情報を更新します．現在はニックネーム更新のみです
      */
-    patch: operations["patch-user"],
+    patch: operations['patch-user'],
   },
-  "/orgs": {
+  '/orgs': {
     /**
-     * 団体リスト 
+     * 団体リスト
      * @description 全団体のリストを取得する
      */
-    get: operations["get-orgs"],
+    get: operations['get-orgs'],
   },
-  "/questions": {
+  '/questions': {
     /**
-     * 質問リスト 
+     * 質問リスト
      * @description 質問と回答項目のリストを取得する
      */
-    get: operations["get-questions"],
+    get: operations['get-questions'],
   },
-  "/recommendation": {
+  '/recommendation': {
     /**
-     * おすすめ団体リスト 
+     * おすすめ団体リスト
      * @description 診断結果に基づくおすすめの団体リストを取得する
      */
-    get: operations["get-recommendation"],
+    get: operations['get-recommendation'],
     /**
-     * 診断処理 
+     * 診断処理
      * @description 診断からスタンプカード・ソート済み団体リストを作成する
      */
-    put: operations["put-recommendation-question"],
+    put: operations['put-recommendation-question'],
   },
-  "/visits": {
+  '/visits': {
     /**
-     * 訪問した団体一覧 
+     * 訪問した団体一覧
      * @description 訪問した団体一覧を取得します
      */
-    get: operations["get-visits"],
+    get: operations['get-visits'],
   },
-  "/visits/{token}": {
+  '/visits/{token}': {
     /**
-     * 訪問記録 
+     * 訪問記録
      * @description 訪問を記録します．記録が重複する場合，上書きされません．
      */
-    post: operations["post-visits-token"],
+    post: operations['post-visits-token'],
     parameters: {
       path: z.object({
         token: z.string(),
       }),
     },
   },
-  "/recommendation/{orgId}": {
+  '/recommendation/{orgId}': {
     /**
-     * 団体除外 
+     * 団体除外
      * @description 特定団体のスタンプを除外し，補欠されたスタンプカードを返します
      */
-    delete: operations["exclude-recommendation"],
+    delete: operations['exclude-recommendation'],
     /**
-     * 団体除外の取り消し 
+     * 団体除外の取り消し
      * @description 特定団体のスタンプを除外したのを削除し，補欠されたスタンプカードを返します
      */
-    patch: operations["delete-exclude-recommendation"],
+    patch: operations['delete-exclude-recommendation'],
     parameters: {
-        /** @description 団体ID */
+      /** @description 団体ID */
       path: z.object({
         orgId: z.string(),
       }),
     },
   },
-  "/rewards": {
+  '/rewards': {
     /**
-     * 景品交換の状態を見る 
+     * 景品交換の状態を見る
      * @description 景品交換の状態を取得します．景品交換ができるかどうかも同時に取得できます．
      */
-    get: operations["get-rewards"],
+    get: operations['get-rewards'],
     /** 景品交換を行います */
-    put: operations["put-rewards"],
+    put: operations['put-rewards'],
   },
-}
+};
