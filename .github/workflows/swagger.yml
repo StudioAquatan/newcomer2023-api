@@ -1,0 +1,20 @@
+name: "Swagger UI Publish"
+on: push
+jobs:
+  swagger-ui:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout latest files
+        uses: actions/checkout@v1
+      - name: Generate Swagger UI
+        uses: Legion2/swagger-ui-action@v1
+        with:
+          output: swagger-ui
+          spec-file: api-spec.yml
+      - name: Publish to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: aquatan-newcomer2023-apidocs
+          directory: swagger-ui/
