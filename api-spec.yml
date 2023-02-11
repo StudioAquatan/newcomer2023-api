@@ -113,11 +113,13 @@ paths:
           name: includeQuestions
           schema:
             type: boolean
+            default: false
           description: 質問の回答を含めるか選択します
         - in: query
           name: includeOrgsContent
           schema:
             type: boolean
+            default: false
           description: 団体の詳細情報を含めるか選択します
       responses:
         '200':
