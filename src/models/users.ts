@@ -1,8 +1,10 @@
+import { DateTime } from 'luxon';
+
 export class User {
   constructor(
     public readonly id: string,
     public readonly nickname: string | null,
-    public readonly createdAt: Date,
+    public readonly createdAt: DateTime,
   ) {}
 
   updateNickname(nickname: string): UncommitedUser {
