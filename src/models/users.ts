@@ -1,6 +1,6 @@
 import { DateTime } from 'luxon';
 
-export class User {
+class UserBase {
   constructor(
     public readonly id: string,
     public readonly nickname: string | null,
@@ -16,7 +16,15 @@ export class User {
   }
 }
 
+declare const persistentMarker: unique symbol;
+
+// DB上のユーザ表現
+export class User extends UserBase {
+  [persistentMarker]: null = null;
+}
+
 declare const updatedMarker: unique symbol;
-export class UncommitedUser extends User {
+// メモリ上の書き込まれていないユーザ表現
+export class UncommitedUser extends UserBase {
   [updatedMarker]: null = null;
 }

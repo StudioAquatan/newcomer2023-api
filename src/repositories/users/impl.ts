@@ -60,6 +60,6 @@ export class UserRepositoryImpl implements UserRepository {
       throw new Error('Commit user failed');
     }
 
-    return user;
+    return new User(user.id, user.nickname, user.createdAt);
   }
 }
