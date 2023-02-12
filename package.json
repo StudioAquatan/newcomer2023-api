@@ -9,6 +9,8 @@
     "eslint-config-prettier": "^8.6.0",
     "eslint-plugin-import": "^2.27.5",
     "eslint-plugin-prettier": "^4.2.1",
+    "husky": "^8.0.0",
+    "npm-run-all": "^4.1.5",
     "openapi-typescript": "^6.1.0",
     "openapi-zod": "^0.1.16",
     "prettier": "^2.8.4",
@@ -19,7 +21,10 @@
   "scripts": {
     "start": "wrangler dev",
     "deploy": "wrangler publish",
-    "prebuild": "npx openapi-zod api-spec.yml --output src/schema.ts"
+    "prebuild": "npx openapi-zod api-spec.yml --output src/schema.ts",
+    "prepare": "husky install",
+    "lint:eslint": "eslint ./src/**/*.{ts,tsx}",
+    "lint": "run-p lint:*"
   },
   "dependencies": {
     "zod": "^3.20.6"
