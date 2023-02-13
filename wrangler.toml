@@ -1,3 +1,14 @@
 name = "newcomer2023-api"
 main = "src/index.ts"
 compatibility_date = "2023-01-09"
+account_id = "b1c527532feebf4bd072eb298c90d644"
+
+[[ d1_databases ]]
+binding = "__D1_BETA__DB"
+database_name = "newcomer2023"
+database_id = "88d9c498-a2f3-4284-b680-1a733416ee69"
+
+[[ d1_databases ]]
+binding = "DB"
+database_name = "newcomer2023"
+database_id = "88d9c498-a2f3-4284-b680-1a733416ee69"
