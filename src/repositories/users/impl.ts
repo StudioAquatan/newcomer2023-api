@@ -1,7 +1,7 @@
-import { User, UncommitedUser } from '../../models/users';
-import { UserRepository } from './repository';
 import { v4 as uuid } from 'uuid';
+import { User, UncommitedUser } from '../../models/users';
 import { fromDateString, SQLDateString } from '../../utils/date';
+import { UserRepository } from './repository';
 
 interface UserResult {
   id: string;
