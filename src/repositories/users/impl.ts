@@ -14,7 +14,7 @@ export class UserRepositoryImpl implements UserRepository {
 
   async migrate() {
     await this.database.exec(`
-        CREATE TABLE IF NOT EXISTS users(id TEXT(36) PRIMARY KEY, nickname TEXT DEFAULT NULL, createdAt TEXT DEFAULT DATETIME(CURRENT_TIMESTAMP));
+        CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY, nickname TEXT DEFAULT NULL, createdAt TEXT DEFAULT (DATETIME(CURRENT_TIMESTAMP)));
     `);
   }
 
@@ -47,14 +47,29 @@ export class UserRepositoryImpl implements UserRepository {
     return user;
   }
 
+  async getUser(id: string): Promise<User> {
+    const getStatement = this.database.prepare(
+      'SELECT * FROM users WHERE id = ?',
+    );
+
+    const result = await getStatement.bind(id).all<UserResult>();
+
+    const user = result.results?.[0];
+
+    if (!result.success || result.results?.length != 1 || !user) {
+      throw new Error('Get user failed');
+    }
+
+    return new User(user.id, user.nickname, fromDateString(user.createdAt));
+  }
+
   async commitUser(user: UncommitedUser): Promise<User> {
     // Nickname is only editable
     const commitStatement = this.database.prepare(
       'UPDATE users SET nickname = ? WHERE id = ?',
     );
 
-    commitStatement.bind(user.nickname, user.id);
-    const result = await commitStatement.run();
+    const result = await commitStatement.bind(user.nickname, user.id).run();
 
     if (!result.success) {
       throw new Error('Commit user failed');
