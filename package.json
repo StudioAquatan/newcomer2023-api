@@ -29,7 +29,10 @@
     "prebuild": "npx openapi-zod api-spec.yml --output src/schema.ts",
     "prepare": "husky install",
     "lint:eslint": "eslint ./src/**/*.{ts,tsx}",
-    "lint": "run-p lint:*"
+    "test:jest": "jest",
+    "test:lint": "npm run lint",
+    "lint": "run-p lint:*",
+    "test": "run-p test:*"
   },
   "dependencies": {
     "zod": "^3.20.6"
