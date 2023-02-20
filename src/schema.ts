@@ -237,7 +237,7 @@ export const operations = {
     requestBody: {
       content: {
         'application/json': z.object({
-          nickname: z.string().optional().optional(),
+          nickname: z.string().optional().nullable(),
         }),
       },
     },

@@ -37,4 +37,40 @@ export class UserController {
 
     return { token, user };
   }
+
+  async getUser(
+    token: string,
+  ): Promise<
+    z.TypeOf<
+      (typeof operations)['get-user']['responses'][200]['content']['application/json']
+    >
+  > {
+    const userId = await this.tokenController.parseToId(token);
+    const user = await this.userRepo.getUser(userId);
+    return UserController.userToResponse(user);
+  }
+
+  async updateNickname(
+    token: string,
+    body: unknown,
+  ): Promise<
+    z.TypeOf<
+      (typeof operations)['patch-user']['responses'][200]['content']['application/json']
+    >
+  > {
+    const request =
+      operations['patch-user'].requestBody.content['application/json'].parse(
+        body,
+      );
+    const userId = await this.tokenController.parseToId(token);
+    const user = await this.userRepo.getUser(userId);
+
+    const newUser = () => {
+      if (request.nickname) return user.updateNickname(request.nickname);
+      else return user.deleteNickname();
+    };
+    const commitedUser = await this.userRepo.commitUser(newUser());
+
+    return UserController.userToResponse(commitedUser);
+  }
 }
