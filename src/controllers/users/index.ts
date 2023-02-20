@@ -77,6 +77,10 @@ export class UserController {
     const userId = await this.tokenController.parseToId(token);
     const user = await this.userRepo.getUser(userId);
 
+    if (request.nickname && request.nickname.length > 16) {
+      throw new HTTPException(400, { message: 'Too long nickname' });
+    }
+
     const newUser = () => {
       if (request.nickname) return user.updateNickname(request.nickname);
       else return user.deleteNickname();
