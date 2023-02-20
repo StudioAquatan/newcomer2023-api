@@ -1,5 +1,8 @@
 import { Context } from 'hono';
+// eslint-disable-next-line import/no-unresolved
+import { HTTPException } from 'hono/http-exception';
 import { z } from 'zod';
+import { HonoEnv } from '../..';
 import { User } from '../../models/users';
 import { UserRepository } from '../../repositories/users/repository';
 import { operations, components } from '../../schema';
@@ -18,7 +21,13 @@ export class UserController {
 
   static getTokenFromHeader(ctx: Context) {
     const tokenHeader = ctx.req.header('Authorization');
-    return tokenHeader?.replace(/^[bB]earer\s+/, '');
+    const token = tokenHeader?.replace(/^[bB]earer\s+/, '');
+
+    if (!token) {
+      throw new HTTPException(401);
+    }
+
+    return token;
   }
 
   static userToResponse(
@@ -39,25 +48,28 @@ export class UserController {
   }
 
   async getUser(
-    token: string,
+    ctx: Context<HonoEnv>,
   ): Promise<
     z.TypeOf<
       (typeof operations)['get-user']['responses'][200]['content']['application/json']
     >
   > {
+    const token = UserController.getTokenFromHeader(ctx);
     const userId = await this.tokenController.parseToId(token);
     const user = await this.userRepo.getUser(userId);
     return UserController.userToResponse(user);
   }
 
   async updateNickname(
-    token: string,
-    body: unknown,
+    ctx: Context<HonoEnv>,
   ): Promise<
     z.TypeOf<
       (typeof operations)['patch-user']['responses'][200]['content']['application/json']
     >
   > {
+    const body = await ctx.req.parseBody();
+    const token = UserController.getTokenFromHeader(ctx);
+
     const request =
       operations['patch-user'].requestBody.content['application/json'].parse(
         body,
