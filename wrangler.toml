@@ -7,8 +7,10 @@ account_id = "b1c527532feebf4bd072eb298c90d644"
 binding = "__D1_BETA__DB"
 database_name = "newcomer2023"
 database_id = "88d9c498-a2f3-4284-b680-1a733416ee69"
+preview_database_id = "846cb66e-9c26-4a7d-9250-e3df185ca7b2"
 
 [[ d1_databases ]]
 binding = "DB"
 database_name = "newcomer2023"
 database_id = "88d9c498-a2f3-4284-b680-1a733416ee69"
+preview_database_id = "846cb66e-9c26-4a7d-9250-e3df185ca7b2"
