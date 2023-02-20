@@ -8,24 +8,61 @@
  * Learn more at https://developers.cloudflare.com/workers/
  */
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface Env {
-  // Example binding to KV. Learn more at https://developers.cloudflare.com/workers/runtime-apis/kv/
-  // MY_KV_NAMESPACE: KVNamespace;
-  //
-  // Example binding to Durable Object. Learn more at https://developers.cloudflare.com/workers/runtime-apis/durable-objects/
-  // MY_DURABLE_OBJECT: DurableObjectNamespace;
-  //
-  // Example binding to R2. Learn more at https://developers.cloudflare.com/workers/runtime-apis/r2/
-  // MY_BUCKET: R2Bucket;
-}
+import { Hono } from 'hono';
+import { UserController } from './controllers/users';
+import { UserTokenController } from './controllers/users/token';
+import { UserRepositoryImpl } from './repositories/users/impl';
 
-export default {
-  async fetch(
-    request: Request,
-    env: Env,
-    ctx: ExecutionContext,
-  ): Promise<Response> {
-    return new Response('Hello World!');
-  },
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+export type WorkersEnv = {
+  DB: D1Database;
+  JWT_SECRET: string;
+  JWT_ISSUER: string;
 };
+
+export type HonoEnv = { Bindings: WorkersEnv };
+
+const createApplication = (env: WorkersEnv) => {
+  const userRepository = new UserRepositoryImpl(env.DB);
+  const userTokenController = new UserTokenController(
+    env.JWT_SECRET,
+    env.JWT_ISSUER,
+  );
+  const userController = new UserController(
+    userRepository,
+    userTokenController,
+  );
+
+  return {
+    userRepository,
+    userTokenController,
+    userController,
+  };
+};
+
+const app = new Hono<HonoEnv>();
+
+app.post('/migrate', async (ctx) => {
+  const { userRepository } = createApplication(ctx.env);
+
+  await userRepository.migrate();
+
+  return ctx.json({});
+});
+
+app.post('/user', async (ctx) => {
+  const { userController } = createApplication(ctx.env);
+  return ctx.json(await userController.registerUser());
+});
+
+app.patch('/user', async (ctx) => {
+  const { userController } = createApplication(ctx.env);
+  return ctx.json(await userController.updateNickname(ctx));
+});
+
+app.get('/user', async (ctx) => {
+  const { userController } = createApplication(ctx.env);
+  return ctx.json(await userController.getUser(ctx));
+});
+
+export default app;
