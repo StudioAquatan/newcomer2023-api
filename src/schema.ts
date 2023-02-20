@@ -14,10 +14,9 @@ export namespace components.schemas {
   export const User = {
     serializer: z.object({
       id: z.string(),
-      nickname: z.string().optional(),
+      nickname: z.string().optional().nullable(),
       createdAt: z
         .string()
-        .or(z.date())
         .transform((d) => new Date(d).toISOString()),
     }),
     deserializer: z.object({
