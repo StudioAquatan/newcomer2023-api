@@ -34,7 +34,8 @@
     "test:jest": "jest",
     "test:lint": "npm run lint",
     "lint": "run-p lint:*",
-    "test": "run-p test:*"
+    "test": "run-p test:*",
+    "mockapi": "docker compose up"
   },
   "dependencies": {
     "hono": "^3.0.1",
