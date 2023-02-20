@@ -42,6 +42,14 @@ const createApplication = (env: WorkersEnv) => {
 
 const app = new Hono<HonoEnv>();
 
+app.post('/migrate', async (ctx) => {
+  const { userRepository } = createApplication(ctx.env);
+
+  await userRepository.migrate();
+
+  return ctx.json({});
+});
+
 app.post('/user', async (ctx) => {
   const { userController } = createApplication(ctx.env);
   return ctx.json(await userController.registerUser());
