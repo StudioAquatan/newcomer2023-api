@@ -67,7 +67,7 @@ export class UserController {
       (typeof operations)['patch-user']['responses'][200]['content']['application/json']
     >
   > {
-    const body = await ctx.req.parseBody();
+    const body = await ctx.req.json();
     const token = UserController.getTokenFromHeader(ctx);
 
     const request =
