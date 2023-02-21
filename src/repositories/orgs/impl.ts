@@ -54,15 +54,25 @@ export class OrgnizationRepositoryImpl implements OrgnizationRepository {
     return await response.json<NewtContentsResponse>();
   }
 
+  private newtImageToModel(image: NewtImage): NewtImage {
+    return {
+      src: image.src,
+      width: image.width,
+      height: image.height,
+    };
+  }
+
   private newtToModel(content: NewtContent): Organization {
     return new Organization(
       content._id,
       content.fullName,
       content.shortName || null,
-      content.shortDescription || null,
-      content.description || null,
-      content.logo ?? null,
-      content.stampBackground ?? null,
+      content.shortDescription,
+      content.description,
+      content.logo ? this.newtImageToModel(content.logo) : null,
+      content.stampBackground
+        ? this.newtImageToModel(content.stampBackground)
+        : null,
       content.stampColor || null,
       content.altLogo.value || null,
       content.location || null,
@@ -75,7 +85,7 @@ export class OrgnizationRepositoryImpl implements OrgnizationRepository {
 
   async getAll(): Promise<Organization[]> {
     const response = await this.fetchFromCDN();
-    return response.items.map(this.newtToModel);
+    return response.items.map((item) => this.newtToModel(item));
   }
 
   async getById(id: string): Promise<Organization> {
