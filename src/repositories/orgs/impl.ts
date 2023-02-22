@@ -1,11 +1,6 @@
 import { Organization } from '../../models/org';
+import { NewtContentsResponse, NewtImage } from '../../types/newt';
 import { OrgnizationRepository } from './repository';
-
-interface NewtImage {
-  src: string;
-  width: number;
-  height: number;
-}
 
 interface NewtContent {
   _id: string;
@@ -29,13 +24,6 @@ interface NewtContent {
   recommendSource: string;
 }
 
-interface NewtContentsResponse {
-  skip: number;
-  limit: number;
-  total: number;
-  items: NewtContent[];
-}
-
 export class OrgnizationRepositoryImpl implements OrgnizationRepository {
   constructor(
     private spaceUid: string,
@@ -43,7 +31,7 @@ export class OrgnizationRepositoryImpl implements OrgnizationRepository {
     private apiKey: string,
   ) {}
 
-  private async fetchFromCDN(): Promise<NewtContentsResponse> {
+  private async fetchFromCDN(): Promise<NewtContentsResponse<NewtContent>> {
     const url = `https://${this.spaceUid}.cdn.newt.so/v1/${this.appUid}/orgnization?limit=100&depth=2`;
     const response = await fetch(url, {
       headers: {
@@ -51,7 +39,7 @@ export class OrgnizationRepositoryImpl implements OrgnizationRepository {
       },
     });
 
-    return await response.json<NewtContentsResponse>();
+    return await response.json<NewtContentsResponse<NewtContent>>();
   }
 
   private newtImageToModel(image: NewtImage): NewtImage {
