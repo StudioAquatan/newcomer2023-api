@@ -1,4 +1,5 @@
 import { Visit } from '../../models/visit';
+import { D1Error } from '../../types/d1';
 import { fromDateString, SQLDateString } from '../../utils/date';
 import { AlreadyVisitedException, VisitRepository } from './repository';
 
@@ -30,27 +31,34 @@ export class VisitRepositoryImpl implements VisitRepository {
       .prepare('SELECT * FROM visits WHERE userId = ? AND orgId = ?')
       .bind(userId, orgId);
 
-    const [insertResult, selectResult] = await this.db.batch<VisitResult>([
-      insertStatement,
-      selectStatement,
-    ]);
+    try {
+      const [, selectResult] = await this.db.batch<VisitResult>([
+        insertStatement,
+        selectStatement,
+      ]);
 
-    // TODO: Check error string
-    if (!insertResult.success) {
-      throw new AlreadyVisitedException();
+      if (!selectResult.results?.[0]) {
+        throw new Error('Database error');
+      }
+
+      const visit = new Visit(
+        selectResult.results[0].userId,
+        selectResult.results[0].orgId,
+        fromDateString(selectResult.results[0].visitedAt),
+      );
+
+      return visit;
+    } catch (e) {
+      const error = e as D1Error;
+      if (error?.cause instanceof Error) {
+        if (error.cause.message.includes('UNIQUE')) {
+          throw new AlreadyVisitedException();
+        }
+
+        throw error?.cause;
+      }
+      throw error;
     }
-
-    if (!selectResult.results?.[0]) {
-      throw new Error('Database error');
-    }
-
-    const visit = new Visit(
-      selectResult.results[0].userId,
-      selectResult.results[0].orgId,
-      fromDateString(selectResult.results[0].visitedAt),
-    );
-
-    return visit;
   }
 
   async getAllVisit(userId: string): Promise<Visit[]> {
