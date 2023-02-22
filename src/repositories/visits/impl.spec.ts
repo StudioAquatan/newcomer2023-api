@@ -1,6 +1,7 @@
 import { DateTime } from 'luxon';
 import { Visit } from '../../models/visit';
 import { VisitRepositoryImpl } from './impl';
+import { AlreadyVisitedException } from './repository';
 
 const { __D1_BETA__DB } = getMiniflareBindings();
 
@@ -50,6 +51,14 @@ describe('VisitRepositoryImpl', () => {
     );
     expect(visits.length).toBe(1);
     expect(visits[0]).toStrictEqual(visit);
+  });
+
+  test('createVisit(dup)', async () => {
+    try {
+      await impl.createVisit(testVisit.userId, testVisit.orgId);
+    } catch (e) {
+      expect(e).toBeInstanceOf(AlreadyVisitedException);
+    }
   });
 
   test('getAllVisit', async () => {
