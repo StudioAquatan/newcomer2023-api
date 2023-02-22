@@ -41,16 +41,18 @@ export class QuestionRepositoryImpl implements QuestionRepository {
       }
     };
 
-    return response.items.map(
+    const converted = response.items.map(
       (content) =>
         new Question(
           content.id,
           content.questionText,
           validateType(content.questionType),
-          content.answers.split(/\n/),
+          content.answers.split(/\n/).filter((text) => text !== ''),
           content.formIndex ?? 0,
           content.sort,
         ),
     );
+
+    return converted.sort((a, b) => a.sort - b.sort);
   }
 }
