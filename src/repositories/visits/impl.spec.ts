@@ -4,7 +4,7 @@ import { VisitRepositoryImpl } from './impl';
 
 const { __D1_BETA__DB } = getMiniflareBindings();
 
-describe('UserRepositoryImpl', () => {
+describe('VisitRepositoryImpl', () => {
   const impl = new VisitRepositoryImpl(__D1_BETA__DB);
   const testVisit = new Visit(
     'f1e05f6a-0564-4356-83a6-610298c64ab5',
