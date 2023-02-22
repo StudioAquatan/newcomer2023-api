@@ -10,9 +10,11 @@
 
 import { Hono } from 'hono';
 import { OrganizationController } from './controllers/orgs';
+import { QuestionController } from './controllers/question';
 import { UserController } from './controllers/users';
 import { UserTokenController } from './controllers/users/token';
 import { OrgnizationRepositoryImpl } from './repositories/orgs/impl';
+import { QuestionRepositoryImpl } from './repositories/question/impl';
 import { UserRepositoryImpl } from './repositories/users/impl';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
@@ -45,12 +47,21 @@ const createApplication = (env: WorkersEnv) => {
   );
   const orgsController = new OrganizationController(orgsRepository);
 
+  const questionRepository = new QuestionRepositoryImpl(
+    env.NEWT_SPACE_UID,
+    env.NEWT_APP_UID,
+    env.NEWT_API_KEY,
+  );
+  const questionController = new QuestionController(questionRepository);
+
   return {
     userRepository,
     userTokenController,
     userController,
     orgsRepository,
     orgsController,
+    questionRepository,
+    questionController,
   };
 };
 
@@ -82,6 +93,11 @@ app.get('/user', async (ctx) => {
 app.get('/orgs', async (ctx) => {
   const { orgsController } = createApplication(ctx.env);
   return ctx.json(await orgsController.getOrgsList());
+});
+
+app.get('/question', async (ctx) => {
+  const { questionController } = createApplication(ctx.env);
+  return ctx.json(await questionController.getQuestionList());
 });
 
 export default app;
