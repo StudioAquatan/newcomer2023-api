@@ -1,5 +1,5 @@
 import { DateTime } from 'luxon';
-import { Visit } from '../../models/visit';
+import { NewVisit, Visit } from '../../models/visit';
 import { VisitRepositoryImpl } from './impl';
 import { AlreadyVisitedException } from './repository';
 
@@ -38,10 +38,11 @@ describe('VisitRepositoryImpl', () => {
   });
 
   test('createVisit', async () => {
-    const visit = await impl.createVisit(
+    const newVisit = new NewVisit(
       'f3ca5321-efb2-48b2-b090-c0214b694ad2',
       'testorg',
     );
+    const visit = await impl.createVisit(newVisit);
     expect(visit.userId).toBe('f3ca5321-efb2-48b2-b090-c0214b694ad2');
     expect(visit.orgId).toBe('testorg');
     expect(visit.visitedAt.diffNow().as('second')).toBeLessThanOrEqual(1);
@@ -55,7 +56,8 @@ describe('VisitRepositoryImpl', () => {
 
   test('createVisit(dup)', async () => {
     try {
-      await impl.createVisit(testVisit.userId, testVisit.orgId);
+      const newVisit = new NewVisit(testVisit.userId, testVisit.orgId);
+      await impl.createVisit(newVisit);
     } catch (e) {
       expect(e).toBeInstanceOf(AlreadyVisitedException);
     }
