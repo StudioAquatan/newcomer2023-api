@@ -5,11 +5,11 @@ import { QuestionResult } from '../../models/qa';
 // 6団体の前半10問の結果を抽出
 const orgAnswerList = [
   [1, 5, 5, 5, 5, 2, 2, 5, 2, 1], // ワンダーフォーゲル部
-  [4, 5, 5, 5, 4, 1, 1, 4, 3, 5], // Xcape
+  [4, 5, 5, 5, 1, 1, 4, 3, 5, 1], // Xcape
   [5, 5, 5, 5, 5, 1, 5, 2, 3, 1], // ぽっけ
-  [4, 5, 5, 5, 1, 1, 4, 3, 5, 1], // 茶道部
+  [5, 5, 5, 5, 5, 3, 2, 1, 3, 4], // 茶道部
   [5, 5, 5, 1, 4, 1, 2, 2, 4, 1], // ギター部
-  [5, 5, 5, 5, 5, 3, 2, 1, 3, 4], // ソフトテニス部
+  [1, 1, 5, 5, 5, 3, 4, 1, 1, 1], // ソフトテニス部
 ];
 
 // 1団体の回答結果を作成する
@@ -41,7 +41,7 @@ export class RecommendController {
   constructor() {
     this.orgResultList = [];
 
-    // 全体の回答結果を生成する
+    // 全団体の回答結果を生成する
     for (let orgID = 0; orgID < orgAnswerList.length; orgID++) {
       const QandA = makeOrgResult(orgID);
       this.orgResultList.push({
@@ -103,8 +103,8 @@ export class RecommendController {
   ) {
     let affinity = 0; // 団体との相性
 
-    let userIndex = 0; // 着目しているユーザの回答結果
-    let orgIndex = 0; // 着目している団体の回答結果
+    let userIndex = 0; // 着目しているユーザの回答結果の添字
+    let orgIndex = 0; // 着目している団体の回答結果の添字
     while (userIndex < userResult.length) {
       const userQuestionID = userResult[userIndex].questionId;
       let isFound = false;
