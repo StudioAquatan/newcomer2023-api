@@ -28,7 +28,7 @@
   "scripts": {
     "start": "wrangler dev",
     "deploy": "wrangler publish",
-    "prebuild": "npx openapi-zod api-spec.yml --output src/schema.ts",
+    "schema": "npx openapi-zod api-spec.yml --output src/schema.ts",
     "prepare": "husky install",
     "lint:eslint": "eslint ./src/**/*.{ts,tsx}",
     "test:jest": "jest",
