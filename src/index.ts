@@ -20,6 +20,7 @@ import { UserRepositoryImpl } from './repositories/users/impl';
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export type WorkersEnv = {
   DB: D1Database;
+  KV: KVNamespace;
   JWT_SECRET: string;
   JWT_ISSUER: string;
   NEWT_SPACE_UID: string;
