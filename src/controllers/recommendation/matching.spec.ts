@@ -40,17 +40,17 @@ it('Diagnostic Algorithm', () => {
   for (const org of orgs) {
     // 相性とスタンプカードの位置
     switch (Number(org.id)) {
-      case 0:
-        expect(org.coefficient).toBe(37);
-        expect(org.stampSlot).toBe(1);
-        break;
-      case 1:
-        expect(org.coefficient).toBe(30);
+      case 3:
+        expect(org.coefficient).toBe(10);
         expect(org.stampSlot).toBe(2);
         break;
-      case 3:
-        expect(org.coefficient).toBe(44);
+      case 4:
+        expect(org.coefficient).toBe(8);
         expect(org.stampSlot).toBe(0);
+        break;
+      case 5:
+        expect(org.coefficient).toBe(9);
+        expect(org.stampSlot).toBe(1);
         break;
       default:
         expect(org.stampSlot).toBe(-1);

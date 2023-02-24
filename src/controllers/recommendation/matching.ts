@@ -76,9 +76,9 @@ export class RecommendController {
       recommendList.push(recommendItem);
     }
 
-    // 相性の降順にソート
+    // 相性の昇順にソート
     recommendList.sort((a, b) => {
-      return a.coefficient < b.coefficient ? 1 : -1;
+      return a.coefficient > b.coefficient ? 1 : -1;
     });
 
     //スタンプカードの配置
@@ -113,7 +113,9 @@ export class RecommendController {
         const orgQuestionID = orgResult[orgIndex].questionId;
 
         if (userQuestionID === orgQuestionID) {
-          affinity += userResult[userIndex].answer * orgResult[orgIndex].answer;
+          affinity += Math.abs(
+            userResult[userIndex].answer - orgResult[orgIndex].answer,
+          );
           isFound = true;
           break;
         }
