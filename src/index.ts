@@ -123,7 +123,7 @@ app.get('/visit', async (ctx) => {
   return visitController.getAllVisit(ctx);
 });
 
-app.get('/visit/:token', async (ctx) => {
+app.post('/visit/:token', async (ctx) => {
   const { visitController } = createApplication(ctx.env);
   return visitController.recordVisit(ctx);
 });
