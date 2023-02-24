@@ -13,9 +13,12 @@ import { OrganizationController } from './controllers/orgs';
 import { QuestionController } from './controllers/question';
 import { UserController } from './controllers/users';
 import { UserTokenController } from './controllers/users/token';
+import { VisitController } from './controllers/visits';
 import { OrgnizationRepositoryImpl } from './repositories/orgs/impl';
 import { QuestionRepositoryImpl } from './repositories/question/impl';
 import { UserRepositoryImpl } from './repositories/users/impl';
+import { VisitTokenRepositoryImpl } from './repositories/visit-token/impl';
+import { VisitRepositoryImpl } from './repositories/visits/impl';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export type WorkersEnv = {
@@ -55,6 +58,15 @@ const createApplication = (env: WorkersEnv) => {
   );
   const questionController = new QuestionController(questionRepository);
 
+  const visitRepository = new VisitRepositoryImpl(env.DB);
+  const visitTokenRepository = new VisitTokenRepositoryImpl(env.DB);
+  const visitController = new VisitController(
+    userTokenController,
+    visitRepository,
+    visitTokenRepository,
+    orgsRepository,
+  );
+
   return {
     userRepository,
     userTokenController,
@@ -63,15 +75,27 @@ const createApplication = (env: WorkersEnv) => {
     orgsController,
     questionRepository,
     questionController,
+    visitRepository,
+    visitTokenRepository,
+    visitController,
   };
 };
 
 const app = new Hono<HonoEnv>();
 
 app.post('/migrate', async (ctx) => {
-  const { userRepository } = createApplication(ctx.env);
+  const {
+    userRepository,
+    visitRepository,
+    visitTokenRepository,
+    visitController,
+  } = createApplication(ctx.env);
 
   await userRepository.migrate();
+  await visitRepository.migrate();
+  await visitTokenRepository.migrate();
+
+  await visitController.registerAll();
 
   return ctx.json({});
 });
@@ -99,6 +123,16 @@ app.get('/orgs', async (ctx) => {
 app.get('/question', async (ctx) => {
   const { questionController } = createApplication(ctx.env);
   return ctx.json(await questionController.getQuestionList());
+});
+
+app.get('/visit', async (ctx) => {
+  const { visitController } = createApplication(ctx.env);
+  return visitController.getAllVisit(ctx);
+});
+
+app.post('/visit/:token', async (ctx) => {
+  const { visitController } = createApplication(ctx.env);
+  return visitController.recordVisit(ctx);
 });
 
 export default app;

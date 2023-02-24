@@ -218,6 +218,8 @@ paths:
           description: Unauthorized
         '404':
           description: Token is not valid
+        '409':
+          description: 既に訪問済みである
         '412':
           description: 訪問の記録がイベント未開始などの都合でできないことを示します
   '/recommendation/{orgId}':
