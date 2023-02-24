@@ -1,4 +1,8 @@
 import { sign, decode, verify } from '@tsndr/cloudflare-worker-jwt';
+import { Context } from 'hono';
+// eslint-disable-next-line import/no-unresolved
+import { HTTPException } from 'hono/http-exception';
+
 export class UserTokenController {
   constructor(private secret: string | JsonWebKey, private issuer: string) {}
 
@@ -23,5 +27,16 @@ export class UserTokenController {
       throw new Error('No subject');
     }
     return decoded.payload.sub;
+  }
+
+  static getTokenFromHeader(ctx: Context) {
+    const tokenHeader = ctx.req.header('Authorization');
+    const token = tokenHeader?.replace(/^[bB]earer\s+/, '');
+
+    if (!token) {
+      throw new HTTPException(401);
+    }
+
+    return token;
   }
 }

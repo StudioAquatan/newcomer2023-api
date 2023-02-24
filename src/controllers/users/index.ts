@@ -19,17 +19,6 @@ export class UserController {
     private tokenController: UserTokenController,
   ) {}
 
-  static getTokenFromHeader(ctx: Context) {
-    const tokenHeader = ctx.req.header('Authorization');
-    const token = tokenHeader?.replace(/^[bB]earer\s+/, '');
-
-    if (!token) {
-      throw new HTTPException(401);
-    }
-
-    return token;
-  }
-
   static userToResponse(
     user: User,
   ): z.TypeOf<typeof components.schemas.User.serializer> {
@@ -54,7 +43,7 @@ export class UserController {
       (typeof operations)['get-user']['responses'][200]['content']['application/json']
     >
   > {
-    const token = UserController.getTokenFromHeader(ctx);
+    const token = UserTokenController.getTokenFromHeader(ctx);
     const userId = await this.tokenController.parseToId(token);
     const user = await this.userRepo.getUser(userId);
     return UserController.userToResponse(user);
@@ -68,7 +57,7 @@ export class UserController {
     >
   > {
     const body = await ctx.req.json();
-    const token = UserController.getTokenFromHeader(ctx);
+    const token = UserTokenController.getTokenFromHeader(ctx);
 
     const request =
       operations['patch-user'].requestBody.content['application/json'].parse(
