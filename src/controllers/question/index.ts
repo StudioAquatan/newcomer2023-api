@@ -1,10 +1,9 @@
+import { Context } from 'hono';
 import { z } from 'zod';
+import { HonoEnv } from '../..';
 import { Question } from '../../models/question';
 import { QuestionRepository } from '../../repositories/question/repository';
 import { operations, components } from '../../schema';
-
-const questionList =
-  operations['get-questions'].responses[200].content['application/json'];
 
 export class QuestionController {
   constructor(private questionRepo: QuestionRepository) {}
@@ -20,8 +19,11 @@ export class QuestionController {
     };
   }
 
-  async getQuestionList(): Promise<z.TypeOf<typeof questionList>> {
+  async getQuestionList(ctx: Context<HonoEnv>): Promise<Response> {
     const list = await this.questionRepo.getAllSorted();
-    return list.map(this.toResponse);
+
+    const responseType =
+      operations['get-questions'].responses[200].content['application/json'];
+    return ctx.json(responseType.parse(list.map(this.toResponse)));
   }
 }

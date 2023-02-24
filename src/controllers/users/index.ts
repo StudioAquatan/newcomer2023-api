@@ -29,33 +29,29 @@ export class UserController {
     };
   }
 
-  async registerUser(): Promise<RegisterUserResult> {
+  async registerUser(ctx: Context<HonoEnv>): Promise<Response> {
     const user = await this.userRepo.registerUser();
     const token = await this.tokenController.create(user.id);
 
-    return { token, user };
+    const responseType =
+      operations['post-user'].responses[200].content['application/json'];
+
+    return ctx.json(
+      responseType.parse({ token, user: UserController.userToResponse(user) }),
+    );
   }
 
-  async getUser(
-    ctx: Context<HonoEnv>,
-  ): Promise<
-    z.TypeOf<
-      (typeof operations)['get-user']['responses'][200]['content']['application/json']
-    >
-  > {
+  async getUser(ctx: Context<HonoEnv>): Promise<Response> {
     const token = UserTokenController.getTokenFromHeader(ctx);
     const userId = await this.tokenController.parseToId(token);
     const user = await this.userRepo.getUser(userId);
-    return UserController.userToResponse(user);
+
+    const responseType =
+      operations['get-user']['responses'][200]['content']['application/json'];
+    return ctx.json(responseType.parse(UserController.userToResponse(user)));
   }
 
-  async updateNickname(
-    ctx: Context<HonoEnv>,
-  ): Promise<
-    z.TypeOf<
-      (typeof operations)['patch-user']['responses'][200]['content']['application/json']
-    >
-  > {
+  async updateNickname(ctx: Context<HonoEnv>): Promise<Response> {
     const body = await ctx.req.json();
     const token = UserTokenController.getTokenFromHeader(ctx);
 
@@ -76,6 +72,11 @@ export class UserController {
     };
     const commitedUser = await this.userRepo.commitUser(newUser());
 
-    return UserController.userToResponse(commitedUser);
+    const responseType =
+      operations['patch-user']['responses'][200]['content']['application/json'];
+
+    return ctx.json(
+      responseType.parse(UserController.userToResponse(commitedUser)),
+    );
   }
 }
