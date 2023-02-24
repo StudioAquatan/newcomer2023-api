@@ -1,9 +1,8 @@
 import { Question } from '../../models/question';
-import { NewtContentsResponse } from '../../types/newt';
+import { NewtContentBase, NewtContentsResponse } from '../../types/newt';
 import { QuestionRepository } from './repository';
 
-interface Content {
-  id: string;
+interface Content extends NewtContentBase {
   questionText: string;
   questionType: string;
   answers: string;
@@ -44,7 +43,7 @@ export class QuestionRepositoryImpl implements QuestionRepository {
     const converted = response.items.map(
       (content) =>
         new Question(
-          content.id,
+          content._id,
           content.questionText,
           validateType(content.questionType),
           content.answers.split(/\n/).filter((text) => text !== ''),
