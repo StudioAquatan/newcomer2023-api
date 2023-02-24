@@ -122,7 +122,7 @@ app.get('/orgs', async (ctx) => {
 
 app.get('/question', async (ctx) => {
   const { questionController } = createApplication(ctx.env);
-  return ctx.json(await questionController.getQuestionList());
+  return questionController.getQuestionList(ctx);
 });
 
 app.get('/visit', async (ctx) => {
