@@ -1,6 +1,6 @@
-import { Visit } from '../../models/visit';
+import { NewVisit, Visit } from '../../models/visit';
 import { D1Error } from '../../types/d1';
-import { fromDateString, SQLDateString } from '../../utils/date';
+import { fromDateString, SQLDateString, toDateString } from '../../utils/date';
 import { AlreadyVisitedException, VisitRepository } from './repository';
 
 interface VisitResult {
@@ -23,31 +23,18 @@ export class VisitRepositoryImpl implements VisitRepository {
     );
   }
 
-  async createVisit(userId: string, orgId: string): Promise<Visit> {
-    const insertStatement = this.db
-      .prepare(`INSERT INTO visits(userId, orgId) VALUES (?, ?)`)
-      .bind(userId, orgId);
-    const selectStatement = this.db
-      .prepare('SELECT * FROM visits WHERE userId = ? AND orgId = ?')
-      .bind(userId, orgId);
-
+  async createVisit(visit: NewVisit): Promise<Visit> {
     try {
-      const [, selectResult] = await this.db.batch<VisitResult>([
-        insertStatement,
-        selectStatement,
-      ]);
+      await this.db
+        .prepare(
+          `INSERT INTO visits(userId, orgId, visitedAt) VALUES (?, ?, ?)`,
+        )
+        .bind(visit.userId, visit.orgId, toDateString(visit.visitedAt))
+        .run();
 
-      if (!selectResult.results?.[0]) {
-        throw new Error('Database error');
-      }
+      const storedVisit = new Visit(visit.userId, visit.orgId, visit.visitedAt);
 
-      const visit = new Visit(
-        selectResult.results[0].userId,
-        selectResult.results[0].orgId,
-        fromDateString(selectResult.results[0].visitedAt),
-      );
-
-      return visit;
+      return storedVisit;
     } catch (e) {
       const error = e as D1Error;
       if (error?.cause instanceof Error) {
