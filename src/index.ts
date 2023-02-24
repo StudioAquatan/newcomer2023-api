@@ -102,17 +102,17 @@ app.post('/migrate', async (ctx) => {
 
 app.post('/user', async (ctx) => {
   const { userController } = createApplication(ctx.env);
-  return ctx.json(await userController.registerUser());
+  return userController.registerUser(ctx);
 });
 
 app.patch('/user', async (ctx) => {
   const { userController } = createApplication(ctx.env);
-  return ctx.json(await userController.updateNickname(ctx));
+  return userController.updateNickname(ctx);
 });
 
 app.get('/user', async (ctx) => {
   const { userController } = createApplication(ctx.env);
-  return ctx.json(await userController.getUser(ctx));
+  return userController.getUser(ctx);
 });
 
 app.get('/orgs', async (ctx) => {
