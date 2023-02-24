@@ -59,7 +59,7 @@ const createApplication = (env: WorkersEnv) => {
   const questionController = new QuestionController(questionRepository);
 
   const visitRepository = new VisitRepositoryImpl(env.DB);
-  const visitTokenRepository = new VisitTokenRepositoryImpl(env.KV);
+  const visitTokenRepository = new VisitTokenRepositoryImpl(env.DB);
   const visitController = new VisitController(
     userTokenController,
     visitRepository,
@@ -83,9 +83,12 @@ const createApplication = (env: WorkersEnv) => {
 const app = new Hono<HonoEnv>();
 
 app.post('/migrate', async (ctx) => {
-  const { userRepository } = createApplication(ctx.env);
+  const { userRepository, visitRepository, visitTokenRepository } =
+    createApplication(ctx.env);
 
   await userRepository.migrate();
+  await visitRepository.migrate();
+  await visitTokenRepository.migrate();
 
   return ctx.json({});
 });
