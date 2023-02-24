@@ -9,7 +9,10 @@ import {
   NoVisitTokenError,
   VisitTokenRepository,
 } from '../../repositories/visit-token/repository';
-import { VisitRepository } from '../../repositories/visits/repository';
+import {
+  AlreadyVisitedException,
+  VisitRepository,
+} from '../../repositories/visits/repository';
 import { operations } from '../../schema';
 import { UserTokenController } from '../users/token';
 
@@ -53,6 +56,9 @@ export class VisitController {
       // TODO: イベントの開始に合わせる
       if (e instanceof NoVisitTokenError) {
         throw new HTTPException(404);
+      }
+      if (e instanceof AlreadyVisitedException) {
+        throw new HTTPException(409);
       }
 
       throw new HTTPException(500);
