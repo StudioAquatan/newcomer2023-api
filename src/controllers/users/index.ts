@@ -36,7 +36,9 @@ export class UserController {
     const responseType =
       operations['post-user'].responses[200].content['application/json'];
 
-    return ctx.json(responseType.parse({ token, user }));
+    return ctx.json(
+      responseType.parse({ token, user: UserController.userToResponse(user) }),
+    );
   }
 
   async getUser(ctx: Context<HonoEnv>): Promise<Response> {
