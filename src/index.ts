@@ -117,7 +117,7 @@ app.get('/user', async (ctx) => {
 
 app.get('/orgs', async (ctx) => {
   const { orgsController } = createApplication(ctx.env);
-  return ctx.json(await orgsController.getOrgsList());
+  return orgsController.getOrgsList(ctx);
 });
 
 app.get('/question', async (ctx) => {

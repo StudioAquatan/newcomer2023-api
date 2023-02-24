@@ -1,10 +1,9 @@
-import { z } from 'zod';
+import { Context } from 'hono';
+import { HonoEnv } from '../..';
 import { Organization } from '../../models/org';
 import { OrgnizationRepository } from '../../repositories/orgs/repository';
 import { operations } from '../../schema';
 
-const orgsList =
-  operations['get-orgs'].responses[200].content['application/json'];
 export class OrganizationController {
   constructor(private orgsRepo: OrgnizationRepository) {}
 
@@ -26,8 +25,13 @@ export class OrganizationController {
     };
   }
 
-  async getOrgsList(): Promise<z.TypeOf<typeof orgsList>> {
+  async getOrgsList(ctx: Context<HonoEnv>): Promise<Response> {
     const orgs = await this.orgsRepo.getAll();
-    return orgs.map(OrganizationController.toResponse);
+
+    const responseType =
+      operations['get-orgs'].responses[200].content['application/json'];
+    return ctx.json(
+      responseType.parse(orgs.map(OrganizationController.toResponse)),
+    );
   }
 }
