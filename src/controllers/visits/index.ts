@@ -3,6 +3,8 @@ import { Context } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import { HonoEnv } from '../..';
 import { Visit } from '../../models/visit';
+import { NewVisitToken } from '../../models/visit-token';
+import { OrgnizationRepository } from '../../repositories/orgs/repository';
 import {
   NoVisitTokenError,
   VisitTokenRepository,
@@ -21,6 +23,7 @@ export class VisitController {
     private userTokenController: UserTokenController,
     private visitRepo: VisitRepository,
     private visitTokenRepo: VisitTokenRepository,
+    private orgsRepo: OrgnizationRepository,
   ) {}
 
   static toVisitResponse(visit: Visit) {
@@ -64,5 +67,15 @@ export class VisitController {
     const response = visitList.map(VisitController.toVisitResponse);
 
     return ctx.json(getAllVisitResponse.parse(response));
+  }
+
+  async registerAll() {
+    const orgList = await this.orgsRepo.getAll();
+    for (const { id } of orgList) {
+      const newToken = new NewVisitToken(id);
+      try {
+        await this.visitTokenRepo.storeToken(newToken);
+      } catch {}
+    }
   }
 }

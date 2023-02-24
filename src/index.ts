@@ -64,6 +64,7 @@ const createApplication = (env: WorkersEnv) => {
     userTokenController,
     visitRepository,
     visitTokenRepository,
+    orgsRepository,
   );
 
   return {
@@ -83,12 +84,18 @@ const createApplication = (env: WorkersEnv) => {
 const app = new Hono<HonoEnv>();
 
 app.post('/migrate', async (ctx) => {
-  const { userRepository, visitRepository, visitTokenRepository } =
-    createApplication(ctx.env);
+  const {
+    userRepository,
+    visitRepository,
+    visitTokenRepository,
+    visitController,
+  } = createApplication(ctx.env);
 
   await userRepository.migrate();
   await visitRepository.migrate();
   await visitTokenRepository.migrate();
+
+  await visitController.registerAll();
 
   return ctx.json({});
 });
