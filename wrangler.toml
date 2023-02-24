@@ -3,8 +3,30 @@ main = "src/index.ts"
 compatibility_date = "2023-01-09"
 account_id = "b1c527532feebf4bd072eb298c90d644"
 kv_namespaces = [
-  { binding = "KV", id = "f860f61f4d9d43128592c81916f9479c", preview_id = "9125e153910244bca858eefa9c9bde3a" }
+  { binding = "KV", id = "f860f61f4d9d43128592c81916f9479c" }
 ]
+
+[vars]
+JWT_ISSUER = "newcomer2023-prd"
+NEWT_SPACE_UID = "kit-newcomer-2023"
+NEWT_APP_UID = "clubs"
+
+[env.development]
+name = "newcomer2023-api-dev"
+kv_namespaces = [
+  { binding = "KV", id = "9125e153910244bca858eefa9c9bde3a" }
+]
+
+[env.development.vars]
+JWT_ISSUER = "newcomer2023-dev"
+NEWT_SPACE_UID = "kit-newcomer-2023"
+NEWT_APP_UID = "clubs"
+
+[[ env.development.d1_databases ]]
+binding = "DB"
+database_name = "newcomer2023-dev"
+database_id = "846cb66e-9c26-4a7d-9250-e3df185ca7b2"
+preview_database_id = "846cb66e-9c26-4a7d-9250-e3df185ca7b2"
 
 [[ d1_databases ]]
 binding = "__D1_BETA__DB"
