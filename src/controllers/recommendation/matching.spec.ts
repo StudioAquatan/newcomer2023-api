@@ -1,4 +1,4 @@
-import { QuestionResult } from '../../models/qa';
+import { QuestionResult } from '../../models/user-answer';
 import { RecommendController } from './matching';
 
 // 配列をシャッフルする関数

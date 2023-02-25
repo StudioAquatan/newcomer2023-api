@@ -1,5 +1,8 @@
-import { RecommendationItem, Recommendation } from '../../models/orgs';
-import { QuestionResult } from '../../models/qa';
+import {
+  RecommendationItem,
+  Recommendation,
+} from '../../models/recommendations';
+import { QuestionResult } from '../../models/user-answer';
 
 // 団体のアンケート回答結果のみ
 // 6団体の前半10問の結果を抽出
