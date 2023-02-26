@@ -9,6 +9,8 @@
  */
 
 import { Hono } from 'hono';
+// eslint-disable-next-line import/no-unresolved
+import { cors } from 'hono/cors';
 import { OrganizationController } from './controllers/orgs';
 import { QuestionController } from './controllers/question';
 import { UserController } from './controllers/users';
@@ -82,6 +84,20 @@ const createApplication = (env: WorkersEnv) => {
 };
 
 const app = new Hono<HonoEnv>();
+
+app.use(
+  '*',
+  cors({
+    origin(origin) {
+      return origin.includes('//localhost')
+        ? origin
+        : 'https://irodori-newcomer-2023.pages.dev';
+    },
+    credentials: true,
+    allowHeaders: ['Authorization'],
+    allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+  }),
+);
 
 app.post('/migrate', async (ctx) => {
   const {
