@@ -1,78 +1,72 @@
+import { Context } from 'hono';
+// eslint-disable-next-line import/no-unresolved
+import { HTTPException } from 'hono/http-exception';
+import { z } from 'zod';
+import { HonoEnv } from '../..';
+import { Organization } from '../../models/org';
+import { Question } from '../../models/question';
 import {
   RecommendationItem,
   Recommendation,
 } from '../../models/recommendations';
-import { QuestionResult } from '../../models/user-answer';
-
-// 団体のアンケート回答結果のみ
-// 6団体の前半10問の結果を抽出
-const orgAnswerList = [
-  [1, 5, 5, 5, 5, 2, 2, 5, 2, 1], // ワンダーフォーゲル部
-  [4, 5, 5, 5, 1, 1, 4, 3, 5, 1], // Xcape
-  [5, 5, 5, 5, 5, 1, 5, 2, 3, 1], // ぽっけ
-  [5, 5, 5, 5, 5, 3, 2, 1, 3, 4], // 茶道部
-  [5, 5, 5, 1, 4, 1, 2, 2, 4, 1], // ギター部
-  [1, 1, 5, 5, 5, 3, 4, 1, 1, 1], // ソフトテニス部
-];
-
-// 1団体の回答結果を作成する
-function makeOrgResult(orgID: number): QuestionResult[] {
-  orgID = orgID % orgAnswerList.length;
-
-  // 回答結果を格納する配列
-  const QandA: QuestionResult[] = [];
-
-  // 回答を生成して追加
-  for (const [questionID, answer] of orgAnswerList[orgID].entries()) {
-    const result = new QuestionResult(questionID.toString(), answer);
-    QandA.push(result);
-  }
-
-  return QandA;
-}
-
-// 1団体の回答結果
-type OrganizationResult = {
-  orgID: string;
-  QandA: QuestionResult[];
-};
+import { UserAnswer } from '../../models/user-answer';
+import { OrgnizationRepository } from '../../repositories/orgs/repository';
+import { QuestionRepository } from '../../repositories/question/repository';
+import { components, operations } from '../../schema';
 
 export class RecommendController {
-  private static readonly numCell = 3; // スタンプカードのマスの数
-  private orgResultList: OrganizationResult[]; // 各団体のアンケート回答結果
+  private static readonly numCell = 9; // スタンプカードのマスの数
 
-  constructor() {
-    this.orgResultList = [];
+  constructor() {}
 
-    // 全団体の回答結果を生成する
-    for (let orgID = 0; orgID < orgAnswerList.length; orgID++) {
-      const QandA = makeOrgResult(orgID);
-      this.orgResultList.push({
-        orgID: orgID.toString(),
-        QandA: QandA,
-      });
-    }
+  static recommendationToResponse(
+    recommendation: Recommendation,
+  ): z.TypeOf<typeof components.schemas.Recommendation.serializer> {
+    return {
+      orgs: recommendation.orgs,
+      ignoreRemains: recommendation.ignoreRemains,
+      renewRemains: recommendation.renewRemains,
+    };
   }
 
   // ユーザの回答結果を受け取って診断結果を返すメソッド
-  diagnose(userResult: QuestionResult[]) {
-    // ユーザの回答結果を質問IDの昇順にソートする
-    userResult.sort((a, b) => {
-      return a.questionId > b.questionId ? 1 : -1;
-    });
+  async diagnose(
+    context: Context<HonoEnv>,
+    orgsRepository: OrgnizationRepository,
+    questionRepository: QuestionRepository,
+  ): Promise<Response> {
+    // ユーザの回答結果を取得する
+    const userAnswerList: UserAnswer[] = await context.req.json();
+
+    // 団体の回答結果を取得する
+    const orgList: Organization[] = await orgsRepository.getAll();
+
+    // 質問一覧を取得する
+    const questionList: Question[] = await questionRepository.getAllSorted();
 
     // おすすめ団体リスト
     const recommendList: RecommendationItem[] = [];
 
-    for (const orgResult of this.orgResultList) {
-      // 団体との相性
-      const affinity = this.calcAffinity(userResult, orgResult.QandA);
+    for (const org of orgList) {
+      // 団体の回答結果を配列化
+      const orgAnswerList = org.recommendSource.split(',').map(Number);
+
+      let affinity = 0; // 団体との相性
+      for (const userAnswer of userAnswerList) {
+        const formIndex = this.getIndexfromId(userAnswer, questionList);
+        if (formIndex === -1) {
+          throw new HTTPException(400, { message: 'Unknown Quesntion' });
+        }
+
+        // 回答結果の差の絶対値を加える
+        affinity += Math.abs(userAnswer.answer - orgAnswerList[formIndex]);
+      }
 
       const recommendItem = new RecommendationItem(
-        orgResult.orgID,
+        org,
         affinity,
         false, // isVisited
-        false, // isExcluded
+        false, // isExecuted
         -1, // stampSlot
       );
 
@@ -81,7 +75,7 @@ export class RecommendController {
 
     // 相性の昇順にソート
     recommendList.sort((a, b) => {
-      return a.coefficient > b.coefficient ? 1 : -1;
+      return a.coefficient - b.coefficient;
     });
 
     //スタンプカードの配置
@@ -89,51 +83,35 @@ export class RecommendController {
       recommendList[cell].stampSlot = cell;
     }
 
-    const recommend = new Recommendation(
+    const recommendation = new Recommendation(
       recommendList,
       5, // igonoreRemains
       5, // renewRemains
     );
 
-    return recommend;
+    const responseType =
+      operations['put-recommendation-question'].responses[200].content[
+        'application/json'
+      ];
+
+    return context.json(
+      responseType.parse(
+        RecommendController.recommendationToResponse(recommendation),
+      ),
+    );
   }
 
-  // 2つの回答結果を受け取って類似度を返すメソッド
-  // 回答結果は質問IDの昇順になっている前提
-  private calcAffinity(
-    userResult: QuestionResult[],
-    orgResult: QuestionResult[],
-  ) {
-    let affinity = 0; // 団体との相性
+  // questionIdからformIndex求めるメソッド
+  private getIndexfromId(userAnswer: UserAnswer, questionList: Question[]) {
+    const userQuestionId = userAnswer.questionId;
 
-    let userIndex = 0; // 着目しているユーザの回答結果の添字
-    let orgIndex = 0; // 着目している団体の回答結果の添字
-    while (userIndex < userResult.length) {
-      const userQuestionID = userResult[userIndex].questionId;
-      let isFound = false;
-
-      while (orgIndex < orgResult.length) {
-        const orgQuestionID = orgResult[orgIndex].questionId;
-
-        if (userQuestionID === orgQuestionID) {
-          affinity += Math.abs(
-            userResult[userIndex].answer - orgResult[orgIndex].answer,
-          );
-          isFound = true;
-          break;
-        }
-
-        orgIndex++;
-      }
-
-      if (isFound) {
-        userIndex++;
-      } else {
-        console.log('Undefiend Question ID');
-        // TODO: 未知の質問ID -> 400
+    // 質問一覧を走査してIDが一致する質問を探す
+    for (const question of questionList) {
+      if (userQuestionId === question.id) {
+        return question.formIndex;
       }
     }
 
-    return affinity;
+    return -1; // IDが一致する質問が見つからなかった
   }
 }
