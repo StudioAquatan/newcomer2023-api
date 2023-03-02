@@ -22,6 +22,8 @@ export class Recommendation {
   ) {}
 }
 
+/* 以下はテスト用の記述 */
+
 const numCell = 3; // スタンプカードのマスの数
 
 // 診断アルゴリズムの単体テスト用

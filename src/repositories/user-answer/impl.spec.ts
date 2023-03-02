@@ -19,7 +19,7 @@ describe('UserAnswerRespositoryImpl', () => {
     answers.push(answer);
   }
 
-  const userAnswer = new InitialUserAnswer(userId1, answers).insertAnswer();
+  const userAnswer = new InitialUserAnswer(userId1, answers);
 
   beforeEach(async () => {
     await impl.migrate(); // テーブルの生成
@@ -31,8 +31,8 @@ describe('UserAnswerRespositoryImpl', () => {
   });
 
   test('Insert user answer', async () => {
-    const uncommited = new InitialUserAnswer(userId2, answers).insertAnswer();
-    const inserted = await impl.insertUserAnswer(uncommited);
+    const initial = new InitialUserAnswer(userId2, answers);
+    const inserted = await impl.insertUserAnswer(initial);
     expect(inserted.id).toBe(userId2);
 
     const insertedAnswers = inserted.answers;
@@ -44,7 +44,6 @@ describe('UserAnswerRespositoryImpl', () => {
     expect(inserted.numAnswered).toBe(1);
   });
 
-  /*
   test('Get user answer', async () => {
     const stored = await impl.getUserAnswer(userId1);
     expect(stored.id).toBe(userId1);
@@ -57,7 +56,6 @@ describe('UserAnswerRespositoryImpl', () => {
 
     expect(stored.numAnswered).toBe(1);
   });
-*/
 
   test('Update user answer', async () => {
     answers.reverse(); // 回答結果を反転

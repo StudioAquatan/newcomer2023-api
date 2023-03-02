@@ -1,5 +1,15 @@
-import { UserAnswer, UncommitedUserAnswer } from '../../models/user-answer';
+import {
+  UserAnswer,
+  InitialUserAnswer,
+  UncommitedUserAnswer,
+} from '../../models/user-answer';
 import { UserAnswerRepository } from './repository';
+
+interface UserAnswerResult {
+  id: string;
+  answers: string;
+  numAnswered: number;
+}
 
 export class UserAnswerRepositoryImpl implements UserAnswerRepository {
   constructor(private database: D1Database) {}
@@ -14,7 +24,7 @@ export class UserAnswerRepositoryImpl implements UserAnswerRepository {
     );
   }
 
-  async insertUserAnswer(userAnwer: UncommitedUserAnswer): Promise<UserAnswer> {
+  async insertUserAnswer(userAnwer: InitialUserAnswer): Promise<UserAnswer> {
     const insertStmt = this.database
       .prepare('INSERT INTO user_answer(id, answers) VALUES (?, ?)')
       .bind(userAnwer.id, JSON.stringify(userAnwer.answers));
@@ -37,13 +47,17 @@ export class UserAnswerRepositoryImpl implements UserAnswerRepository {
       .prepare('SELECT * FROM user_answer WHERE id = ?')
       .bind(userId);
 
-    const selectResult = await selectStmt.all<UserAnswer>();
+    const selectResult = await selectStmt.all<UserAnswerResult>();
     if (!selectResult.success || typeof selectResult.results === 'undefined') {
       throw new Error(`Failed to get user answer: ${selectResult.error}`);
     }
 
-    const answers: UserAnswer = selectResult.results[0];
-    return answers;
+    const result: UserAnswerResult = selectResult.results[0];
+    return new UserAnswer(
+      result.id,
+      JSON.parse(result.answers),
+      result.numAnswered,
+    );
   }
 
   async updateUserAnswer(

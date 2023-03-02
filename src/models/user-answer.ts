@@ -1,5 +1,3 @@
-const updateLimit = 5; // 回答し直せる上限回数
-
 // 診断質問問答
 export class QuestionResult {
   constructor(
@@ -17,20 +15,18 @@ export class UserAnswer {
   ) {}
 
   updateAnswer(newAnswer: QuestionResult[]): UncommitedUserAnswer {
-    if (this.numAnswered < updateLimit) {
-      // TODO: 何を返すべきか分からなかった
-    }
+    // 回数制限を課すならココ
     return new UncommitedUserAnswer(this.id, newAnswer, this.numAnswered + 1);
   }
 }
 
+const initialMarker = Symbol();
+
 export class InitialUserAnswer extends UserAnswer {
+  [initialMarker] = null;
+
   constructor(userId: string, answers: QuestionResult[]) {
     super(userId, answers, 1);
-  }
-
-  insertAnswer() {
-    return new UncommitedUserAnswer(this.id, this.answers, this.numAnswered);
   }
 }
 

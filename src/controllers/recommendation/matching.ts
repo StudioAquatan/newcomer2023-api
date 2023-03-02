@@ -9,16 +9,17 @@ import {
   RecommendationItem,
   Recommendation,
 } from '../../models/recommendations';
-import { QuestionResult } from '../../models/user-answer';
+import { InitialUserAnswer, QuestionResult } from '../../models/user-answer';
 import { OrgnizationRepository } from '../../repositories/orgs/repository';
 import { QuestionRepository } from '../../repositories/question/repository';
+import { UserAnswerRepository } from '../../repositories/user-answer/repository';
 import { components, operations } from '../../schema';
 import { UserTokenController } from '../users/token';
 
 export class RecommendController {
   private static readonly numCell = 9; // スタンプカードのマスの数
 
-  constructor() {}
+  constructor(private userAnswerRepo: UserAnswerRepository) {}
 
   static toResponse(
     recommendation: Recommendation,
@@ -36,12 +37,13 @@ export class RecommendController {
     questionRepository: QuestionRepository,
   ): Promise<Response> {
     // TODO: ユーザID(主キー)をヘッダから取得する
-    const userToken = UserTokenController.getTokenFromHeader(context);
+    const userId = UserTokenController.getTokenFromHeader(context);
 
     // ユーザの回答結果を取得する
     const userAnswerList: QuestionResult[] = await context.req.json();
 
     // TODO: ユーザの学部を取得する
+    // 学部を尋ねる質問IDからanswerを取得する
 
     // 団体の回答結果を取得する
     const orgList: Organization[] = await orgsRepository.getAll();
@@ -96,9 +98,11 @@ export class RecommendController {
       5, // renewRemains
     );
 
-    // TODO: ユーザの回答結果を格納
+    // ユーザの回答結果を保存
+    const initialAnswer = new InitialUserAnswer(userId, userAnswerList);
+    await this.userAnswerRepo.insertUserAnswer(initialAnswer);
 
-    // TODO: 診断結果を格納
+    // TODO: 診断結果を保存
 
     const responseType =
       operations['put-recommendation-question'].responses[200].content[
