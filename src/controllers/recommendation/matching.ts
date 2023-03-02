@@ -9,17 +9,18 @@ import {
   RecommendationItem,
   Recommendation,
 } from '../../models/recommendations';
-import { UserAnswer } from '../../models/user-answer';
+import { QuestionResult } from '../../models/user-answer';
 import { OrgnizationRepository } from '../../repositories/orgs/repository';
 import { QuestionRepository } from '../../repositories/question/repository';
 import { components, operations } from '../../schema';
+import { UserTokenController } from '../users/token';
 
 export class RecommendController {
   private static readonly numCell = 9; // スタンプカードのマスの数
 
   constructor() {}
 
-  static recommendationToResponse(
+  static toResponse(
     recommendation: Recommendation,
   ): z.TypeOf<typeof components.schemas.Recommendation.serializer> {
     return {
@@ -29,14 +30,18 @@ export class RecommendController {
     };
   }
 
-  // ユーザの回答結果を受け取って診断結果を返すメソッド
   async diagnose(
     context: Context<HonoEnv>,
     orgsRepository: OrgnizationRepository,
     questionRepository: QuestionRepository,
   ): Promise<Response> {
+    // TODO: ユーザID(主キー)をヘッダから取得する
+    const userToken = UserTokenController.getTokenFromHeader(context);
+
     // ユーザの回答結果を取得する
-    const userAnswerList: UserAnswer[] = await context.req.json();
+    const userAnswerList: QuestionResult[] = await context.req.json();
+
+    // TODO: ユーザの学部を取得する
 
     // 団体の回答結果を取得する
     const orgList: Organization[] = await orgsRepository.getAll();
@@ -48,6 +53,8 @@ export class RecommendController {
     const recommendList: RecommendationItem[] = [];
 
     for (const org of orgList) {
+      // TODO: 内部フィルタに引っかかったらcontinue
+
       // 団体の回答結果を配列化
       const orgAnswerList = org.recommendSource.split(',').map(Number);
 
@@ -89,20 +96,22 @@ export class RecommendController {
       5, // renewRemains
     );
 
+    // TODO: ユーザの回答結果を格納
+
+    // TODO: 診断結果を格納
+
     const responseType =
       operations['put-recommendation-question'].responses[200].content[
         'application/json'
       ];
 
     return context.json(
-      responseType.parse(
-        RecommendController.recommendationToResponse(recommendation),
-      ),
+      responseType.parse(RecommendController.toResponse(recommendation)),
     );
   }
 
   // questionIdからformIndex求めるメソッド
-  private getIndexfromId(userAnswer: UserAnswer, questionList: Question[]) {
+  private getIndexfromId(userAnswer: QuestionResult, questionList: Question[]) {
     const userQuestionId = userAnswer.questionId;
 
     // 質問一覧を走査してIDが一致する質問を探す

@@ -1,7 +1,7 @@
 import { Organization } from './org';
 import { Question } from './question';
 import { diagnose } from './recommendations';
-import { UserAnswer } from './user-answer';
+import { QuestionResult } from './user-answer';
 
 // 団体のアンケート回答結果のみ
 // 6団体の前半10問の結果を抽出
@@ -17,7 +17,7 @@ const orgAnswerList = [
 // テスト用の質問数
 const numQuestin = 10;
 
-it('Diagnostic Algorithm', () => {
+test('Diagnostic Algorithm', () => {
   // 質問一覧の生成
   const questionList: Question[] = [];
 
@@ -45,19 +45,20 @@ it('Diagnostic Algorithm', () => {
       'activeDays',
       [], // links
       orgAnswerList[i],
+      null,
     );
 
     orgList.push(org);
   }
 
   // ユーザの回答結果の生成
-  const userAnswerList: UserAnswer[] = [];
+  const userAnswerList: QuestionResult[] = [];
   const userAnswerNumber = [3, 1, 5, 1, 2];
 
   for (let i = 0; i < numQuestin / 2; i++) {
     // ユーザはIDが奇数の質問に回答
     const questionId = i * 2 + 1;
-    const userAnswer = new UserAnswer(
+    const userAnswer = new QuestionResult(
       questionId.toString(),
       userAnswerNumber[i],
     );

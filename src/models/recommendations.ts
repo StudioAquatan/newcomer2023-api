@@ -1,6 +1,6 @@
 import { Organization } from './org';
 import { Question } from './question';
-import { UserAnswer } from './user-answer';
+import { QuestionResult } from './user-answer';
 
 // おすすめ団体(スタンプ)
 export class RecommendationItem {
@@ -27,7 +27,7 @@ const numCell = 3; // スタンプカードのマスの数
 // 診断アルゴリズムの単体テスト用
 // できるだけ記述を一致させるためメソッドとはしなかった
 export const diagnose = (
-  userAnswerList: UserAnswer[],
+  userAnswerList: QuestionResult[],
   orgList: Organization[],
   questionList: Question[],
 ) => {
@@ -80,7 +80,10 @@ export const diagnose = (
   return recommendation;
 };
 
-const getIndexfromId = (userAnswer: UserAnswer, questionList: Question[]) => {
+const getIndexfromId = (
+  userAnswer: QuestionResult,
+  questionList: Question[],
+) => {
   const userQuestionId = userAnswer.questionId;
 
   // 質問一覧を走査してIDが一致する質問を探す
