@@ -36,7 +36,7 @@ export class RecommendController {
     orgsRepository: OrgnizationRepository,
     questionRepository: QuestionRepository,
   ): Promise<Response> {
-    // TODO: ユーザID(主キー)をヘッダから取得する
+    // ユーザID(主キー)をヘッダから取得する
     const userId = UserTokenController.getTokenFromHeader(context);
 
     // ユーザの回答結果を取得する
@@ -113,6 +113,8 @@ export class RecommendController {
       responseType.parse(RecommendController.toResponse(recommendation)),
     );
   }
+
+  // TODO: 診断結果を取得するメソッド
 
   // questionIdからformIndex求めるメソッド
   private getIndexfromId(userAnswer: QuestionResult, questionList: Question[]) {

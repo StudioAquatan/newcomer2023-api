@@ -5,6 +5,7 @@ import {
 } from '../../models/user-answer';
 import { UserAnswerRepository } from './repository';
 
+// DBから取得したユーザの回答結果
 interface UserAnswerResult {
   id: string;
   answers: string;
@@ -24,10 +25,10 @@ export class UserAnswerRepositoryImpl implements UserAnswerRepository {
     );
   }
 
-  async insertUserAnswer(userAnwer: InitialUserAnswer): Promise<UserAnswer> {
+  async insertUserAnswer(initial: InitialUserAnswer): Promise<UserAnswer> {
     const insertStmt = this.database
       .prepare('INSERT INTO user_answer(id, answers) VALUES (?, ?)')
-      .bind(userAnwer.id, JSON.stringify(userAnwer.answers));
+      .bind(initial.userId, JSON.stringify(initial.answers));
 
     const insertResult = await insertStmt.run();
     if (!insertResult.success) {
@@ -35,11 +36,7 @@ export class UserAnswerRepositoryImpl implements UserAnswerRepository {
       throw new Error(`Failed to insert user's answer: ${insertResult.error}`);
     }
 
-    return new UserAnswer(
-      userAnwer.id,
-      userAnwer.answers,
-      userAnwer.numAnswered,
-    );
+    return new UserAnswer(initial.userId, initial.answers, initial.numAnswered);
   }
 
   async getUserAnswer(userId: string): Promise<UserAnswer> {
@@ -61,11 +58,11 @@ export class UserAnswerRepositoryImpl implements UserAnswerRepository {
   }
 
   async updateUserAnswer(
-    userAnswer: UncommitedUserAnswer,
+    uncommited: UncommitedUserAnswer,
   ): Promise<UserAnswer> {
     const updateStmt = this.database
       .prepare('UPDATE user_answer SET answers = ? WHERE id = ?')
-      .bind(JSON.stringify(userAnswer.answers), userAnswer.id);
+      .bind(JSON.stringify(uncommited.answers), uncommited.userId);
 
     const updateResult = await updateStmt.run();
     if (!updateResult.success) {
@@ -74,9 +71,9 @@ export class UserAnswerRepositoryImpl implements UserAnswerRepository {
     }
 
     return new UserAnswer(
-      userAnswer.id,
-      userAnswer.answers,
-      userAnswer.numAnswered,
+      uncommited.userId,
+      uncommited.answers,
+      uncommited.numAnswered,
     );
   }
 }

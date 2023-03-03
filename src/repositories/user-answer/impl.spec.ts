@@ -6,7 +6,7 @@ const { __D1_BETA__DB } = getMiniflareBindings();
 
 const numQuestion = 8; // 質問数
 
-describe('UserAnswerRespositoryImpl', () => {
+describe('User Answer Respository', () => {
   const impl = new UserAnswerRepositoryImpl(__D1_BETA__DB);
 
   const userId1 = uuid();
@@ -33,7 +33,7 @@ describe('UserAnswerRespositoryImpl', () => {
   test('Insert user answer', async () => {
     const initial = new InitialUserAnswer(userId2, answers);
     const inserted = await impl.insertUserAnswer(initial);
-    expect(inserted.id).toBe(userId2);
+    expect(inserted.userId).toBe(userId2);
 
     const insertedAnswers = inserted.answers;
     for (let i = 0; i < insertedAnswers.length; i++) {
@@ -46,7 +46,7 @@ describe('UserAnswerRespositoryImpl', () => {
 
   test('Get user answer', async () => {
     const stored = await impl.getUserAnswer(userId1);
-    expect(stored.id).toBe(userId1);
+    expect(stored.userId).toBe(userId1);
 
     const storedAnswers = stored.answers;
     for (let i = 0; i < storedAnswers.length; i++) {
@@ -62,7 +62,7 @@ describe('UserAnswerRespositoryImpl', () => {
     const uncommited = userAnswer.updateAnswer(answers);
     const updated = await impl.updateUserAnswer(uncommited);
 
-    expect(updated.id).toBe(userId1);
+    expect(updated.userId).toBe(userId1);
 
     const updatedAnswers = updated.answers;
     for (let i = 0; i < updatedAnswers.length; i++) {
