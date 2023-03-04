@@ -136,7 +136,7 @@ app.get('/orgs', async (ctx) => {
   return orgsController.getOrgsList(ctx);
 });
 
-app.get('/question', async (ctx) => {
+app.get('/questions', async (ctx) => {
   const { questionController } = createApplication(ctx.env);
   return questionController.getQuestionList(ctx);
 });
