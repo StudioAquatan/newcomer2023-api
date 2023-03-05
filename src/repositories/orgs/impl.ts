@@ -68,7 +68,6 @@ export class OrgnizationRepositoryImpl implements OrgnizationRepository {
       content.activeDays || null,
       content.links.split('\n').filter((l) => !!l),
       content.recommendSource,
-      // TODO: 内部フィルタ
     );
   }
 

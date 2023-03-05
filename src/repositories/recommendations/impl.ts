@@ -3,7 +3,7 @@ import {
   SimpleRecommendation,
   UncommitedRecommendation,
 } from '../../models/recommendations';
-import { RecommendRepository } from './repository';
+import { RecommendRepository, NoRecommendError } from './repository';
 
 // DBから取得した診断結果
 interface RecommendResult {
@@ -31,7 +31,7 @@ export class RecommendRepositoryImpl implements RecommendRepository {
     initial: InitialRecommendation,
   ): Promise<SimpleRecommendation> {
     const insertStmt = this.database
-      .prepare('INSERT INTO recommendation(id, orgs) VALUES (?, ?)')
+      .prepare('INSERT INTO recommendation(id, orgs) VALUES (?, ?);')
       .bind(initial.userId, JSON.stringify(initial.orgs));
 
     const insertResult = await insertStmt.run();
@@ -48,14 +48,16 @@ export class RecommendRepositoryImpl implements RecommendRepository {
     );
   }
 
-  async getRecommend(userId: string): Promise<SimpleRecommendation> {
+  async fetchRecommend(userId: string): Promise<SimpleRecommendation> {
     const selectStmt = this.database
-      .prepare('SELECT * FROM recommendation WHERE id = ?')
+      .prepare('SELECT * FROM recommendation WHERE id = ?;')
       .bind(userId);
 
     const selectResult = await selectStmt.all<RecommendResult>();
-    if (!selectResult.success || typeof selectResult.results === 'undefined') {
-      throw new Error(`Failed to get recommend: ${selectResult.error}`);
+    if (!selectResult.success) {
+      throw new Error(`Failed to fetch recommend: ${selectResult.error}`);
+    } else if (!selectResult.results) {
+      throw new NoRecommendError('Recommendation is not found');
     }
 
     const result: RecommendResult = selectResult.results[0];
@@ -72,7 +74,7 @@ export class RecommendRepositoryImpl implements RecommendRepository {
     uncommited: UncommitedRecommendation,
   ): Promise<SimpleRecommendation> {
     const updateStmt = this.database
-      .prepare('UPDATE recommendation SET orgs = ? WHERE id = ?')
+      .prepare('UPDATE recommendation SET orgs = ? WHERE id = ?;')
       .bind(JSON.stringify(uncommited.orgs), uncommited.userId);
 
     const updateResult = await updateStmt.run();

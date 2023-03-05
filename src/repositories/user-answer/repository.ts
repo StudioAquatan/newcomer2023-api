@@ -6,6 +6,6 @@ import {
 
 export interface UserAnswerRepository {
   insertUserAnswer(initial: InitialUserAnswer): Promise<UserAnswer>;
-  getUserAnswer(userId: string): Promise<UserAnswer>;
+  fetchUserAnswer(userId: string): Promise<UserAnswer>;
   updateUserAnswer(uncommited: UncommitedUserAnswer): Promise<UserAnswer>;
 }

@@ -44,8 +44,8 @@ describe('User Answer Respository', () => {
     expect(inserted.numAnswered).toBe(1);
   });
 
-  test('Get user answer', async () => {
-    const stored = await impl.getUserAnswer(userId1);
+  test('Fetch user answer', async () => {
+    const stored = await impl.fetchUserAnswer(userId1);
     expect(stored.userId).toBe(userId1);
 
     const storedAnswers = stored.answers;

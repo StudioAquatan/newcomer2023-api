@@ -17,13 +17,13 @@ export class SimpleRecommendation {
   constructor(
     public readonly userId: string,
     public readonly orgs: SimpleRecommendationItem[],
-    public readonly ignoreRemains: number = 5,
-    public readonly renewRemains: number = 5,
+    public ignoreRemains: number = 5,
+    public renewRemains: number = 5,
   ) {}
 
   renewRecommend(
     newRecommend: SimpleRecommendationItem[],
-  ): UncommitedRecommendation | null {
+  ): UncommitedRecommendation | undefined {
     if (this.renewRemains > 0) {
       return new UncommitedRecommendation(
         this.userId,
@@ -33,7 +33,7 @@ export class SimpleRecommendation {
       );
     }
 
-    return null;
+    return undefined;
   }
 }
 
@@ -65,11 +65,11 @@ export class UncommitedRecommendation extends SimpleRecommendation {
 // おすすめ団体(スタンプ)
 export class RecommendationItem {
   constructor(
-    public readonly org: Organization,
+    public readonly org: Organization | Pick<Organization, 'id'>,
     public readonly coefficient: number,
-    public readonly isVisited: boolean = false,
-    public readonly isExcluded: boolean = false,
-    public stampSlot: number = -1, // 相性でソートしてから上書きする
+    public isVisited: boolean = false,
+    public isExcluded: boolean = false,
+    public stampSlot: number = -1,
   ) {}
 }
 
@@ -115,9 +115,9 @@ export const diagnose = (
     const recommendItem = new RecommendationItem(
       org,
       affinity,
-      false, // isVisited
-      false, // isExecuted
-      -1, // stampSlot
+      /* isVisited = */ false,
+      /* isExcluded = */ false,
+      /* stampSlot = */ -1,
     );
 
     recommendList.push(recommendItem);
@@ -135,8 +135,8 @@ export const diagnose = (
 
   const recommendation = new Recommendation(
     recommendList,
-    5, // igonoreRemains
-    5, // renewRemains
+    /* igonoreRemains = */ 5,
+    /* renewRemains = */ 5,
   );
 
   return recommendation;

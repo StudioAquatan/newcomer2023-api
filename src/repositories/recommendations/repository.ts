@@ -4,12 +4,18 @@ import {
   UncommitedRecommendation,
 } from '../../models/recommendations';
 
+export class NoRecommendError extends Error {
+  constructor(public msg: string) {
+    super(msg);
+  }
+}
+
 export interface RecommendRepository {
   insertRecommend(
     initial: InitialRecommendation,
   ): Promise<SimpleRecommendation>;
 
-  getRecommend(userId: string): Promise<SimpleRecommendation>;
+  fetchRecommend(userId: string): Promise<SimpleRecommendation>;
 
   renewRecommend(
     uncommited: UncommitedRecommendation,

@@ -36,14 +36,14 @@ test('Diagnostic Algorithm', () => {
       'shortName',
       'shortDescription',
       'description',
-      null, // logo
-      null, // stampBackground
-      null, // stampColor
+      /* logo = */ null,
+      /* stampBackground = */ null,
+      /* stampColor = */ null,
       'altLogo',
       'location',
       'fees',
       'activeDays',
-      [], // links
+      /* links = */ [],
       orgAnswerList[i],
       null,
     );

@@ -27,7 +27,7 @@ export class UserAnswerRepositoryImpl implements UserAnswerRepository {
 
   async insertUserAnswer(initial: InitialUserAnswer): Promise<UserAnswer> {
     const insertStmt = this.database
-      .prepare('INSERT INTO user_answer(id, answers) VALUES (?, ?)')
+      .prepare('INSERT INTO user_answer(id, answers) VALUES (?, ?);')
       .bind(initial.userId, JSON.stringify(initial.answers));
 
     const insertResult = await insertStmt.run();
@@ -39,14 +39,16 @@ export class UserAnswerRepositoryImpl implements UserAnswerRepository {
     return new UserAnswer(initial.userId, initial.answers, initial.numAnswered);
   }
 
-  async getUserAnswer(userId: string): Promise<UserAnswer> {
+  async fetchUserAnswer(userId: string): Promise<UserAnswer> {
     const selectStmt = this.database
-      .prepare('SELECT * FROM user_answer WHERE id = ?')
+      .prepare('SELECT * FROM user_answer WHERE id = ?;')
       .bind(userId);
 
     const selectResult = await selectStmt.all<UserAnswerResult>();
-    if (!selectResult.success || typeof selectResult.results === 'undefined') {
-      throw new Error(`Failed to get user answer: ${selectResult.error}`);
+    if (!selectResult.success) {
+      throw new Error(`Failed to fetch user answer: ${selectResult.error}`);
+    } else if (!selectResult.results) {
+      throw new Error('User answer is not found');
     }
 
     const result: UserAnswerResult = selectResult.results[0];
@@ -61,7 +63,7 @@ export class UserAnswerRepositoryImpl implements UserAnswerRepository {
     uncommited: UncommitedUserAnswer,
   ): Promise<UserAnswer> {
     const updateStmt = this.database
-      .prepare('UPDATE user_answer SET answers = ? WHERE id = ?')
+      .prepare('UPDATE user_answer SET answers = ? WHERE id = ?;')
       .bind(JSON.stringify(uncommited.answers), uncommited.userId);
 
     const updateResult = await updateStmt.run();

@@ -47,8 +47,8 @@ describe('Recommmendation Repository', () => {
     expect(inserted.renewRemains).toBe(5);
   });
 
-  test('Get recommendation', async () => {
-    const stored = await impl.getRecommend(userId1);
+  test('Fetch recommendation', async () => {
+    const stored = await impl.fetchRecommend(userId1);
     expect(stored.userId).toBe(userId1);
 
     const orgs = stored.orgs;
