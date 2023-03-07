@@ -89,7 +89,7 @@ app.use(
   '*',
   cors({
     origin(origin) {
-      return origin.includes('//localhost')
+      return origin.includes('//localhost') || origin.includes('-dev.pages.dev')
         ? origin
         : 'https://irodori-newcomer-2023.pages.dev';
     },
