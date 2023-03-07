@@ -1,6 +1,6 @@
 import { Organization } from './org';
 import { Question } from './question';
-import { diagnose } from './recommendations';
+import { Recommendation } from './recommendations';
 import { QuestionResult } from './user-answer';
 
 // 団体のアンケート回答結果のみ
@@ -14,21 +14,26 @@ const orgAnswerList = [
   '1,1,5,5,5,3,4,1,1,1', // ソフトテニス部
 ];
 
-// テスト用の質問数
-const numQuestin = 10;
-
 test('Diagnostic Algorithm', () => {
-  // 質問一覧の生成
-  const questionList: Question[] = [];
+  // テスト用の質問数
+  const numQuestin = 10;
 
+  /* 質問一覧の生成 */
+  const questionList: Question[] = [];
   for (let i = 0; i < numQuestin; i++) {
-    const question = new Question(i.toString(), 'question', 'five', [], i, i);
+    const question = new Question(
+      i.toString(),
+      /* questionText */ 'question',
+      /* questinType */ 'five',
+      /* answers */ [],
+      /* formIndex */ i,
+      /* sort */ i,
+    );
     questionList.push(question);
   }
 
   // 団体一覧の生成
   const orgList: Organization[] = [];
-
   for (let i = 0; i < orgAnswerList.length; i++) {
     const org = new Organization(
       i.toString(),
@@ -45,7 +50,6 @@ test('Diagnostic Algorithm', () => {
       'activeDays',
       /* links = */ [],
       orgAnswerList[i],
-      null,
     );
 
     orgList.push(org);
@@ -65,21 +69,32 @@ test('Diagnostic Algorithm', () => {
     userAnswerList.push(userAnswer);
   }
 
-  const recommendation = diagnose(userAnswerList, orgList, questionList);
+  const recommendList = Recommendation.diagnose(
+    userAnswerList,
+    orgList,
+    questionList,
+  );
 
-  if (!recommendation) {
+  if (!recommendList) {
     // 未知の質問が含まれていた場合
     return;
   }
 
-  expect(recommendation.ignoreRemains).toBe(5);
-  expect(recommendation.renewRemains).toBe(5);
-
-  const orgs = recommendation.orgs;
-
-  for (const org of orgs) {
+  for (const org of recommendList) {
     // 相性とスタンプカードの位置
     switch (Number(org.org.id)) {
+      case 0:
+        expect(org.coefficient).toBe(14);
+        expect(org.stampSlot).toBe(5);
+        break;
+      case 1:
+        expect(org.coefficient).toBe(13);
+        expect(org.stampSlot).toBe(4);
+        break;
+      case 2:
+        expect(org.coefficient).toBe(12);
+        expect(org.stampSlot).toBe(3);
+        break;
       case 3:
         expect(org.coefficient).toBe(10);
         expect(org.stampSlot).toBe(2);

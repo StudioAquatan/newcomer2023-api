@@ -9,7 +9,6 @@ import {
   RecommendationItem,
   Recommendation,
   InitialRecommendation,
-  SimpleRecommendationItem,
   UncommitedRecommendation,
 } from '../../models/recommendations';
 import { InitialUserAnswer, QuestionResult } from '../../models/user-answer';
@@ -26,12 +25,15 @@ import { UserTokenController } from '../users/token';
 
 // GETリクエストのレスポンス
 type FullRecommendInfo = {
-  recommendation: Recommendation;
+  recommendation: Omit<Recommendation, 'numIgnore' | 'numRenew'> & {
+    ignoreRemains: number;
+    renewRemains: number;
+  };
   answers?: QuestionResult[];
 };
 
 export class RecommendController {
-  private static readonly numCell = 9; // スタンプカードのマスの数
+  static readonly numCell = 9; // スタンプカードのマスの数
 
   constructor(
     private userAnswerRepo: UserAnswerRepository,
@@ -43,8 +45,8 @@ export class RecommendController {
   ): z.TypeOf<typeof components.schemas.Recommendation.serializer> {
     return {
       orgs: recommendation.orgs,
-      ignoreRemains: recommendation.ignoreRemains,
-      renewRemains: recommendation.renewRemains,
+      ignoreRemains: 5 - recommendation.numIgnore,
+      renewRemains: 5 - recommendation.numRenew,
     };
   }
 
@@ -69,7 +71,7 @@ export class RecommendController {
     let storedRecommend = undefined;
     try {
       storedRecommend = await this.recommendRepo.fetchRecommend(userId);
-      if (storedRecommend.renewRemains <= 0) {
+      if (storedRecommend.numRenew >= 5) {
         throw new HTTPException(429, {
           message: 'No more diagnosis available',
         });
@@ -92,48 +94,16 @@ export class RecommendController {
     // 質問一覧を取得する
     const questionList: Question[] = await questionRepo.getAllSorted();
 
-    // レスポンスとして返す診断結果
-    const recommendList: RecommendationItem[] = [];
-    // DBに保存する診断結果
-    const simpleRecommendList: SimpleRecommendationItem[] = [];
+    const recommendList = Recommendation.diagnose(
+      userAnswerList,
+      orgList,
+      questionList,
+    );
 
-    /* 団体との相性を求める */
-    for (const org of orgList) {
-      // TODO: 内部フィルタに引っかかったらcontinue
-
-      // 団体の回答結果を配列化
-      const orgAnswerList = org.recommendSource.split(',').map(Number);
-
-      // 団体との相性を求める
-      let affinity = 0;
-      for (const userAnswer of userAnswerList) {
-        const formIndex = this.getIndexfromId(userAnswer, questionList);
-        if (formIndex === -1) {
-          throw new HTTPException(400, { message: 'Unknown Quesntion' });
-        }
-
-        affinity += Math.abs(userAnswer.answer - orgAnswerList[formIndex]);
-      }
-
-      recommendList.push(
-        new RecommendationItem(
-          org,
-          affinity,
-          /* isVisited = */ false,
-          /* isExcluded = */ false,
-          /* stampSlot = */ -1,
-        ),
-      );
-
-      // eslint-disable-next-line prettier/prettier
-      simpleRecommendList.push(
-        new SimpleRecommendationItem(org.id, affinity)
-      );
+    if (!recommendList) {
+      // IDが一致する質問が見つからなかった
+      throw new HTTPException(400, { message: 'Unknown Quesntion' });
     }
-
-    // スタンプカードの再配置
-    // オブジェクトは参照渡し
-    this.arrangeStampSlot(recommendList);
 
     // ユーザの回答結果と診断結果をDBに保存
     let committedRecommend;
@@ -144,7 +114,7 @@ export class RecommendController {
       );
 
       committedRecommend = await this.recommendRepo.insertRecommend(
-        new InitialRecommendation(userId, simpleRecommendList),
+        new InitialRecommendation(userId, recommendList),
       );
     } else {
       // 再診断時はDBから取得したデータを更新
@@ -154,8 +124,7 @@ export class RecommendController {
       await this.userAnswerRepo.updateUserAnswer(uncommitedAnswer);
 
       const storedRecommend = await this.recommendRepo.fetchRecommend(userId);
-      const uncommitedRecommend =
-        storedRecommend.renewRecommend(simpleRecommendList);
+      const uncommitedRecommend = storedRecommend.renewRecommend(recommendList);
       committedRecommend = await this.recommendRepo.renewRecommend(
         // 診断の更新回数は冒頭でチェックしている
         uncommitedRecommend as UncommitedRecommendation,
@@ -164,8 +133,8 @@ export class RecommendController {
 
     const recommendation = new Recommendation(
       recommendList,
-      /* ignoreRemains = */ committedRecommend.ignoreRemains,
-      /* renewRemains */ committedRecommend.renewRemains,
+      committedRecommend.numIgnore,
+      committedRecommend.numRenew,
     );
 
     const responseType =
@@ -180,36 +149,8 @@ export class RecommendController {
     );
   }
 
-  // questionIdに対応するformIndex求めるメソッド
-  private getIndexfromId(userAnswer: QuestionResult, questionList: Question[]) {
-    const userQuestionId = userAnswer.questionId;
-
-    // 質問一覧を走査してIDが一致する質問を探す
-    const question = questionList.find(({ id: questionId }) => {
-      return userQuestionId === questionId;
-    });
-
-    if (question) {
-      return question.formIndex;
-    } else {
-      return -1; // IDが一致する質問が見つからなかった
-    }
-  }
-
-  // スタンプカードの配置を求めるメソッド
-  private arrangeStampSlot(recommendList: RecommendationItem[]) {
-    // おすすめ団体リストを相性の昇順にソート
-    recommendList.sort((a, b) => {
-      return a.coefficient - b.coefficient;
-    });
-
-    for (let cell = 0; cell < RecommendController.numCell; cell++) {
-      recommendList[cell].stampSlot = cell;
-    }
-  }
-
   // 診断結果を取得するメソッド
-  async fetchRecommend(
+  async getRecommend(
     context: Context<HonoEnv>,
     orgsRepo: OrgnizationRepository,
     visitRepo: VisitRepository,
@@ -251,7 +192,7 @@ export class RecommendController {
     // TODO: isExcludedの復元
 
     // スタンプカードの再配置
-    this.arrangeStampSlot(recommendList);
+    Recommendation.arrangeStampSlot(recommendList);
 
     if (includeOrgsContent) {
       // 団体の詳細を含める
@@ -278,8 +219,8 @@ export class RecommendController {
 
     const recommendation = new Recommendation(
       recommendList,
-      storedRecommend.ignoreRemains,
-      storedRecommend.renewRemains,
+      storedRecommend.numIgnore,
+      storedRecommend.numRenew,
     );
     const fullInfo: FullRecommendInfo = {
       recommendation: RecommendController.recommendToResponse(recommendation),

@@ -1,3 +1,4 @@
+import { RecommendController } from '../controllers/recommendation/matching';
 import { Organization } from './org';
 import { Question } from './question';
 import { QuestionResult } from './user-answer';
@@ -17,23 +18,37 @@ export class SimpleRecommendation {
   constructor(
     public readonly userId: string,
     public readonly orgs: SimpleRecommendationItem[],
-    public ignoreRemains: number = 5,
-    public renewRemains: number = 5,
+    public numIgnore: number = 0,
+    public numRenew: number = 0,
   ) {}
 
   renewRecommend(
-    newRecommend: SimpleRecommendationItem[],
+    newRecommend: RecommendationItem[],
   ): UncommitedRecommendation | undefined {
-    if (this.renewRemains > 0) {
-      return new UncommitedRecommendation(
-        this.userId,
-        newRecommend,
-        this.ignoreRemains,
-        this.renewRemains - 1,
-      );
+    // 診断回数の確認
+    if (this.numRenew >= 5) {
+      return undefined;
     }
 
-    return undefined;
+    return new UncommitedRecommendation(
+      this.userId,
+      SimpleRecommendation.toSimpleRecommendList(newRecommend),
+      this.numIgnore,
+      this.numRenew + 1,
+    );
+  }
+
+  // RecomendationItem[]をSimpleRecommendationItem[]に変換するメソッド
+  static toSimpleRecommendList(
+    recommendList: RecommendationItem[],
+  ): SimpleRecommendationItem[] {
+    const simpleList = recommendList.map((recommendItem) => {
+      const { org, coefficient } = recommendItem;
+      const simpleItem = new SimpleRecommendationItem(org.id, coefficient);
+      return simpleItem;
+    });
+
+    return simpleList;
   }
 }
 
@@ -42,8 +57,14 @@ const initialMarker = Symbol();
 export class InitialRecommendation extends SimpleRecommendation {
   [initialMarker] = null;
 
-  constructor(userId: string, orgs: SimpleRecommendationItem[]) {
-    super(userId, orgs, 5, 5);
+  constructor(userId: string, recommendList: RecommendationItem[]) {
+    super(
+      userId,
+      // HACK: クラスメソッドを継承させないようにしたい
+      InitialRecommendation.toSimpleRecommendList(recommendList),
+      /* numIgnore = */ 0,
+      /* numRenew = */ 0,
+    );
   }
 }
 
@@ -55,10 +76,10 @@ export class UncommitedRecommendation extends SimpleRecommendation {
   constructor(
     userId: string,
     orgs: SimpleRecommendationItem[],
-    ignoreRemains: number,
-    renewRemains: number,
+    numIgnore: number,
+    numRenew: number,
   ) {
-    super(userId, orgs, ignoreRemains, renewRemains);
+    super(userId, orgs, numIgnore, numRenew);
   }
 }
 
@@ -77,83 +98,86 @@ export class RecommendationItem {
 export class Recommendation {
   constructor(
     public readonly orgs: RecommendationItem[],
-    public readonly ignoreRemains: number = 5,
-    public readonly renewRemains: number = 5,
+    public numIgnore: number = 0,
+    public numRenew: number = 0,
   ) {}
-}
 
-/* 以下はテスト用の記述 */
+  static diagnose(
+    userAnswerList: QuestionResult[],
+    orgList: Organization[],
+    questionList: Question[],
+  ): RecommendationItem[] | undefined {
+    // おすすめ団体リスト
+    const recommendList: RecommendationItem[] = [];
 
-const numCell = 3; // スタンプカードのマスの数
+    for (const org of orgList) {
+      // ユーザの回答結果を配列化
+      const orgAnswerList = org.recommendSource.split(',').map(Number);
 
-// 診断アルゴリズムの単体テスト用
-// できるだけ記述を一致させるためメソッドとはしなかった
-export const diagnose = (
-  userAnswerList: QuestionResult[],
-  orgList: Organization[],
-  questionList: Question[],
-) => {
-  // おすすめ団体リスト
-  const recommendList: RecommendationItem[] = [];
+      let affinity = 0; // 団体との相性
+      for (const userAnswer of userAnswerList) {
+        const formIndex = Recommendation.getIndexFromId(
+          userAnswer,
+          questionList,
+        );
+        if (formIndex === -1) {
+          console.error('Unknown Question');
+          return undefined;
+        }
 
-  for (const org of orgList) {
-    // ユーザの回答結果を配列化
-    const orgAnswerList = org.recommendSource.split(',').map(Number);
-
-    let affinity = 0; // 団体との相性
-    for (const userAnswer of userAnswerList) {
-      const formIndex = getIndexfromId(userAnswer, questionList);
-      if (formIndex === -1) {
-        console.log('Unknown Question');
-        return undefined;
+        // 回答結果の差の絶対値を加える
+        affinity += Math.abs(userAnswer.answer - orgAnswerList[formIndex]);
       }
 
-      // 回答結果の差の絶対値を加える
-      affinity += Math.abs(userAnswer.answer - orgAnswerList[formIndex]);
+      const recommendItem = new RecommendationItem(
+        org,
+        affinity,
+        /* isVisited = */ false,
+        /* isExcluded = */ false,
+        /* stampSlot = */ -1,
+      );
+
+      recommendList.push(recommendItem);
     }
 
-    const recommendItem = new RecommendationItem(
-      org,
-      affinity,
-      /* isVisited = */ false,
-      /* isExcluded = */ false,
-      /* stampSlot = */ -1,
-    );
+    Recommendation.arrangeStampSlot(recommendList);
 
-    recommendList.push(recommendItem);
+    return recommendList;
   }
 
-  // 相性の昇順にソート
-  recommendList.sort((a, b) => {
-    return a.coefficient - b.coefficient;
-  });
+  // questionIdに対応するformIndex求めるメソッド
+  // クラスメソッドから呼び出されるためクラスメソッドとしている
+  private static getIndexFromId(
+    userAnswer: QuestionResult,
+    questionList: Question[],
+  ) {
+    const userQuestionId = userAnswer.questionId;
 
-  //スタンプカードの配置
-  for (let cell = 0; cell < numCell; cell++) {
-    recommendList[cell].stampSlot = cell;
+    // 質問一覧を走査してIDが一致する質問を探す
+    for (const question of questionList) {
+      if (userQuestionId === question.id) {
+        return question.formIndex;
+      }
+    }
+
+    return -1; // IDが一致する質問が見つからなかった
   }
 
-  const recommendation = new Recommendation(
-    recommendList,
-    /* igonoreRemains = */ 5,
-    /* renewRemains = */ 5,
-  );
+  // スタンプカードの配置を決めるメソッド
+  static arrangeStampSlot(recommendList: RecommendationItem[]) {
+    // おすすめ団体リストを相性の昇順にソート
+    recommendList.sort((a, b) => {
+      return a.coefficient - b.coefficient;
+    });
 
-  return recommendation;
-};
+    // テスト時は団体数よりマスの数の方が少ない
+    const numCell =
+      recommendList.length < RecommendController.numCell
+        ? recommendList.length
+        : RecommendController.numCell;
 
-const getIndexfromId = (
-  userAnswer: QuestionResult,
-  questionList: Question[],
-) => {
-  const userQuestionId = userAnswer.questionId;
-
-  // 質問一覧を走査してIDが一致する質問を探す
-  for (const question of questionList) {
-    if (userQuestionId === question.id) {
-      return question.formIndex;
+    for (let cell = 0; cell < numCell; cell++) {
+      recommendList[cell].stampSlot = cell;
     }
   }
-
-  return -1; // IDが一致する質問が見つからなかった
-};
+}

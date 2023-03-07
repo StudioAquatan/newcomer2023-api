@@ -1,7 +1,8 @@
 import { v4 as uuid } from 'uuid';
+import { Organization } from '../../models/org';
 import {
-  SimpleRecommendationItem,
   InitialRecommendation,
+  RecommendationItem,
 } from '../../models/recommendations';
 import { RecommendRepositoryImpl } from './impl';
 
@@ -14,9 +15,10 @@ describe('Recommmendation Repository', () => {
   const userId2 = uuid();
 
   // おすすめ団体の生成
-  const recommendList: SimpleRecommendationItem[] = [];
+  const recommendList: RecommendationItem[] = [];
   for (let i = 0; i < 10; i++) {
-    const recommendItem = new SimpleRecommendationItem(i.toString(), i * 10);
+    const org: Pick<Organization, 'id'> = { id: i.toString() };
+    const recommendItem = new RecommendationItem(org, i * 10);
     recommendList.push(recommendItem);
   }
 
@@ -39,12 +41,12 @@ describe('Recommmendation Repository', () => {
 
     const orgs = inserted.orgs;
     for (const [i, org] of orgs.entries()) {
-      expect(org.orgId).toBe(recommendList[i].orgId);
+      expect(org.orgId).toBe(recommendList[i].org.id);
       expect(org.coefficient).toBe(recommendList[i].coefficient);
     }
 
-    expect(inserted.ignoreRemains).toBe(5);
-    expect(inserted.renewRemains).toBe(5);
+    expect(inserted.numIgnore).toBe(0);
+    expect(inserted.numRenew).toBe(0);
   });
 
   test('Fetch recommendation', async () => {
@@ -53,31 +55,32 @@ describe('Recommmendation Repository', () => {
 
     const orgs = stored.orgs;
     for (const [i, org] of orgs.entries()) {
-      expect(org.orgId).toBe(recommendList[i].orgId);
+      expect(org.orgId).toBe(recommendList[i].org.id);
       expect(org.coefficient).toBe(recommendList[i].coefficient);
     }
 
-    expect(stored.ignoreRemains).toBe(5);
-    expect(stored.renewRemains).toBe(5);
+    expect(stored.numIgnore).toBe(0);
+    expect(stored.numRenew).toBe(0);
   });
 
   test('Renew recommendation', async () => {
     recommendList.reverse(); // 診断結果を反転
     const uncommited = recommendation.renewRecommend(recommendList);
-    if (uncommited === null) {
+    if (!uncommited) {
       console.log('No more updates available');
       return;
     }
 
+    // モデルを修正してから書き直す
     const updated = await impl.renewRecommend(uncommited);
 
     const orgs = updated.orgs;
     for (const [i, org] of orgs.entries()) {
-      expect(org.orgId).toBe(recommendList[i].orgId);
+      expect(org.orgId).toBe(recommendList[i].org.id);
       expect(org.coefficient).toBe(recommendList[i].coefficient);
     }
 
-    expect(updated.ignoreRemains).toBe(5);
-    expect(updated.renewRemains).toBe(4);
+    expect(updated.numIgnore).toBe(0);
+    expect(updated.numRenew).toBe(1);
   });
 });
