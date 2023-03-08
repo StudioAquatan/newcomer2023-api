@@ -170,14 +170,20 @@ export class Recommendation {
       return a.coefficient - b.coefficient;
     });
 
-    // テスト時は団体数よりマスの数の方が少ない
+    // テスト時は団体数よりマスの数の方が多い
     const numCell =
       recommendList.length < RecommendController.numCell
         ? recommendList.length
         : RecommendController.numCell;
 
-    for (let cell = 0; cell < numCell; cell++) {
-      recommendList[cell].stampSlot = cell;
+    let slot = 0;
+    for (let i = 0; i < recommendList.length && slot < numCell; i++) {
+      // 除外された団体は配置しない
+      if (recommendList[i].isExcluded) {
+        continue;
+      }
+
+      recommendList[i].stampSlot = slot++;
     }
   }
 }
