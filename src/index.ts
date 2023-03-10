@@ -94,7 +94,7 @@ app.use(
         : 'https://irodori-newcomer-2023.pages.dev';
     },
     credentials: true,
-    allowHeaders: ['Authorization'],
+    allowHeaders: ['Authorization', 'Content-Type'],
     allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   }),
 );
