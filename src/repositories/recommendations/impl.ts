@@ -9,8 +9,8 @@ import { RecommendRepository, NoRecommendError } from './repository';
 interface RecommendResult {
   id: string;
   orgs: string;
-  numIgnore: number;
-  numRenew: number;
+  ignoreCount: number;
+  renewCount: number;
 }
 
 export class RecommendRepositoryImpl implements RecommendRepository {
@@ -21,8 +21,8 @@ export class RecommendRepositoryImpl implements RecommendRepository {
       `CREATE TABLE IF NOT EXISTS recommendation(
         id TEXT PRIMARY KEY,
         orgs TEXT DEFAULT NULL,
-        numIgnore INTEGER DEFAULT 0,
-        numRenew INTEGER DEFAULT 0
+        ignoreCount INTEGER DEFAULT 0,
+        renewCount INTEGER DEFAULT 0
       );`.replaceAll(/\n/g, ''),
     );
   }
@@ -43,8 +43,8 @@ export class RecommendRepositoryImpl implements RecommendRepository {
     return new SimpleRecommendation(
       initial.userId,
       initial.orgs,
-      initial.numIgnore,
-      initial.numRenew,
+      initial.ignoreCount,
+      initial.renewCount,
     );
   }
 
@@ -65,8 +65,8 @@ export class RecommendRepositoryImpl implements RecommendRepository {
     return new SimpleRecommendation(
       result.id,
       JSON.parse(result.orgs),
-      result.numIgnore,
-      result.numRenew,
+      result.ignoreCount,
+      result.renewCount,
     );
   }
 
@@ -86,8 +86,8 @@ export class RecommendRepositoryImpl implements RecommendRepository {
     return new SimpleRecommendation(
       uncommited.userId,
       uncommited.orgs,
-      uncommited.numIgnore,
-      uncommited.numRenew,
+      uncommited.ignoreCount,
+      uncommited.renewCount,
     );
   }
 }

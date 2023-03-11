@@ -1,8 +1,4 @@
-import {
-  UserAnswer,
-  InitialUserAnswer,
-  UncommitedUserAnswer,
-} from '../../models/user-answer';
+import { UserAnswer, UncommitedUserAnswer } from '../../models/user-answer';
 import { UserAnswerRepository } from './repository';
 
 // DBから取得したユーザの回答結果
@@ -19,16 +15,17 @@ export class UserAnswerRepositoryImpl implements UserAnswerRepository {
     await this.database.exec(
       `CREATE TABLE IF NOT EXISTS user_answer(
         id TEXT PRIMARY KEY,
-        answers TEXT DEFAULT NULL,
-        numAnswered INTEGER DEFAULT 1
+        answers TEXT DEFAULT NULL
       );`.replaceAll(/\n/g, ''), // /g: 繰り返し置換せよ
     );
   }
 
-  async insertUserAnswer(initial: InitialUserAnswer): Promise<UserAnswer> {
+  async insertUserAnswer(
+    uncommited: UncommitedUserAnswer,
+  ): Promise<UserAnswer> {
     const insertStmt = this.database
       .prepare('INSERT INTO user_answer(id, answers) VALUES (?, ?);')
-      .bind(initial.userId, JSON.stringify(initial.answers));
+      .bind(uncommited.userId, JSON.stringify(uncommited.answers));
 
     const insertResult = await insertStmt.run();
     if (!insertResult.success) {
@@ -36,7 +33,7 @@ export class UserAnswerRepositoryImpl implements UserAnswerRepository {
       throw new Error(`Failed to insert user's answer: ${insertResult.error}`);
     }
 
-    return new UserAnswer(initial.userId, initial.answers, initial.numAnswered);
+    return new UserAnswer(uncommited.userId, uncommited.answers);
   }
 
   async fetchUserAnswer(userId: string): Promise<UserAnswer> {
@@ -52,11 +49,7 @@ export class UserAnswerRepositoryImpl implements UserAnswerRepository {
     }
 
     const result: UserAnswerResult = selectResult.results[0];
-    return new UserAnswer(
-      result.id,
-      JSON.parse(result.answers),
-      result.numAnswered,
-    );
+    return new UserAnswer(result.id, JSON.parse(result.answers));
   }
 
   async updateUserAnswer(
@@ -72,10 +65,6 @@ export class UserAnswerRepositoryImpl implements UserAnswerRepository {
       throw new Error(`Failed to update user answer: ${updateResult.error}`);
     }
 
-    return new UserAnswer(
-      uncommited.userId,
-      uncommited.answers,
-      uncommited.numAnswered,
-    );
+    return new UserAnswer(uncommited.userId, uncommited.answers);
   }
 }

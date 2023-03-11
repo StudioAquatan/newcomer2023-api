@@ -2,7 +2,7 @@ import { v4 as uuid } from 'uuid';
 import { Organization } from '../../models/org';
 import {
   InitialRecommendation,
-  RecommendationItem,
+  RecommendItem,
 } from '../../models/recommendations';
 import { RecommendRepositoryImpl } from './impl';
 
@@ -15,10 +15,10 @@ describe('Recommmendation Repository', () => {
   const userId2 = uuid();
 
   // おすすめ団体の生成
-  const recommendList: RecommendationItem[] = [];
+  const recommendList: RecommendItem[] = [];
   for (let i = 0; i < 10; i++) {
     const org: Pick<Organization, 'id'> = { id: i.toString() };
-    const recommendItem = new RecommendationItem(org, i * 10);
+    const recommendItem = new RecommendItem(org, i * 10);
     recommendList.push(recommendItem);
   }
 
@@ -45,8 +45,8 @@ describe('Recommmendation Repository', () => {
       expect(org.coefficient).toBe(recommendList[i].coefficient);
     }
 
-    expect(inserted.numIgnore).toBe(0);
-    expect(inserted.numRenew).toBe(0);
+    expect(inserted.ignoreCount).toBe(0);
+    expect(inserted.renewCount).toBe(0);
   });
 
   test('Fetch recommendation', async () => {
@@ -59,8 +59,8 @@ describe('Recommmendation Repository', () => {
       expect(org.coefficient).toBe(recommendList[i].coefficient);
     }
 
-    expect(stored.numIgnore).toBe(0);
-    expect(stored.numRenew).toBe(0);
+    expect(stored.ignoreCount).toBe(0);
+    expect(stored.renewCount).toBe(0);
   });
 
   test('Renew recommendation', async () => {
@@ -80,7 +80,7 @@ describe('Recommmendation Repository', () => {
       expect(org.coefficient).toBe(recommendList[i].coefficient);
     }
 
-    expect(updated.numIgnore).toBe(0);
-    expect(updated.numRenew).toBe(1);
+    expect(updated.ignoreCount).toBe(0);
+    expect(updated.renewCount).toBe(1);
   });
 });

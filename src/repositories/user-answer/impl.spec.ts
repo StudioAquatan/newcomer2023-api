@@ -1,5 +1,5 @@
 import { v4 as uuid } from 'uuid';
-import { QuestionResult, InitialUserAnswer } from '../../models/user-answer';
+import { QuestionResult, UncommitedUserAnswer } from '../../models/user-answer';
 import { UserAnswerRepositoryImpl } from './impl';
 
 const { __D1_BETA__DB } = getMiniflareBindings();
@@ -19,11 +19,11 @@ describe('User Answer Respository', () => {
     answers.push(answer);
   }
 
-  const userAnswer = new InitialUserAnswer(userId1, answers);
+  const testAnswer = new UncommitedUserAnswer(userId1, answers);
 
   beforeEach(async () => {
     await impl.migrate(); // テーブルの生成
-    await impl.insertUserAnswer(userAnswer); // 回答結果を1つ挿入
+    await impl.insertUserAnswer(testAnswer); // 回答結果を1つ挿入
   });
 
   afterEach(async () => {
@@ -31,8 +31,8 @@ describe('User Answer Respository', () => {
   });
 
   test('Insert user answer', async () => {
-    const initial = new InitialUserAnswer(userId2, answers);
-    const inserted = await impl.insertUserAnswer(initial);
+    const addtional = new UncommitedUserAnswer(userId2, answers);
+    const inserted = await impl.insertUserAnswer(addtional);
     expect(inserted.userId).toBe(userId2);
 
     const insertedAnswers = inserted.answers;
@@ -40,8 +40,6 @@ describe('User Answer Respository', () => {
       expect(insertedAnswers[i].questionId).toBe(answers[i].questionId);
       expect(insertedAnswers[i].answer).toBe(answers[i].answer);
     }
-
-    expect(inserted.numAnswered).toBe(1);
   });
 
   test('Fetch user answer', async () => {
@@ -53,13 +51,11 @@ describe('User Answer Respository', () => {
       expect(storedAnswers[i].questionId).toBe(answers[i].questionId);
       expect(storedAnswers[i].answer).toBe(answers[i].answer);
     }
-
-    expect(stored.numAnswered).toBe(1);
   });
 
   test('Update user answer', async () => {
     answers.reverse(); // 回答結果を反転
-    const uncommited = userAnswer.updateAnswer(answers);
+    const uncommited = testAnswer.updateAnswer(answers);
     const updated = await impl.updateUserAnswer(uncommited);
 
     expect(updated.userId).toBe(userId1);
@@ -69,8 +65,6 @@ describe('User Answer Respository', () => {
       expect(updatedAnswers[i].questionId).toBe(answers[i].questionId);
       expect(updatedAnswers[i].answer).toBe(answers[i].answer);
     }
-
-    expect(updated.numAnswered).toBe(2);
   });
 });
 
