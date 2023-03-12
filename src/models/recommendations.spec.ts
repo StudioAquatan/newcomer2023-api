@@ -42,6 +42,7 @@ test('Diagnostic Algorithm', () => {
       'shortDescription',
       'description',
       /* logo = */ null,
+      false,
       /* stampBackground = */ null,
       /* stampColor = */ null,
       'altLogo',
