@@ -42,6 +42,9 @@ export class RecommendController {
   constructor(
     private userAnswerRepo: UserAnswerRepository,
     private recommendRepo: RecommendRepository,
+    private orgRepo: OrgnizationRepository,
+    private questionRepo: QuestionRepository,
+    private visitRepo: VisitRepository,
   ) {}
 
   static recommendToResponse(
@@ -63,22 +66,24 @@ export class RecommendController {
     };
   }
 
-  async diagnose(
-    context: Context<HonoEnv>,
-    orgRepo: OrgnizationRepository,
-    questionRepo: QuestionRepository,
-  ): Promise<Response> {
+  async diagnose(context: Context<HonoEnv>): Promise<Response> {
     // ユーザID(主キー)をヘッダから取得する
     const userId = UserTokenController.getTokenFromHeader(context);
 
     // ユーザの回答結果をボディから取得する
-    const userAnswerList: QuestionResult[] = await context.req.json();
+    const requestType =
+      operations['put-recommendation-question'].requestBody.content[
+        'application/json'
+      ];
+    const userAnswerList: QuestionResult[] = requestType.parse(
+      await context.req.json(),
+    );
     // TODO: 学部を尋ねる質問のIDを手がかりにユーザの学部を取得する
 
     // 団体の回答結果を取得する
-    const orgList: Organization[] = await orgRepo.getAll();
+    const orgList: Organization[] = await this.orgRepo.getAll();
     // 質問一覧を取得する
-    const questionList: Question[] = await questionRepo.getAllSorted();
+    const questionList: Question[] = await this.questionRepo.getAllSorted();
 
     let recommendList: RecommendItem[];
     try {
@@ -159,11 +164,7 @@ export class RecommendController {
   }
 
   // 診断結果を取得するメソッド
-  async getRecommend(
-    context: Context<HonoEnv>,
-    orgsRepo: OrgnizationRepository,
-    visitRepo: VisitRepository,
-  ) {
+  async getRecommend(context: Context<HonoEnv>) {
     const userId = UserTokenController.getTokenFromHeader(context);
     // クエリパラメータの取得
     const { includeQuestions, includeOrgsContent } = context.req.query();
@@ -204,7 +205,7 @@ export class RecommendController {
 
     // 訪問済みの団体を調べる
     // TODO: isExcludedの復元
-    const visitList = await visitRepo.getAllVisit(userId);
+    const visitList = await this.visitRepo.getAllVisit(userId);
     recommendation = recommendation.checkVisitedOrg(visitList);
 
     // スタンプカードの再配置
@@ -212,7 +213,7 @@ export class RecommendController {
 
     if (includeOrgsContent) {
       // 団体の詳細を含める
-      const orgList = await orgsRepo.getAll();
+      const orgList = await this.orgRepo.getAll();
       recommendation = recommendation.replaceOrgsContent(orgList);
     }
 
