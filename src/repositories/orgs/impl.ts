@@ -12,6 +12,7 @@ interface NewtContent {
   description: string;
   shortDescription: string;
   logo?: NewtImage;
+  logoFocus: boolean;
   altLogo: {
     value: string;
   };
@@ -58,6 +59,7 @@ export class OrgnizationRepositoryImpl implements OrgnizationRepository {
       content.shortDescription,
       content.description,
       content.logo ? this.newtImageToModel(content.logo) : null,
+      content.logoFocus ?? false,
       content.stampBackground
         ? this.newtImageToModel(content.stampBackground)
         : null,

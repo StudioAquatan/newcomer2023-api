@@ -12,6 +12,7 @@ export class Organization {
     public readonly shortDescription: string,
     public readonly description: string,
     public readonly logo: Image | null,
+    public readonly logoFocus: boolean,
     public readonly stampBackground: Image | null,
     public readonly stampColor: string | null,
     public readonly altLogo: string | null,

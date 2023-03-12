@@ -14,6 +14,7 @@ export class OrganizationController {
       shortName: org.shortName ?? org.fullName,
       shortDescription: org.shortDescription ?? '',
       logo: org.logo ?? undefined,
+      logoFocus: org.logoFocus,
       stampBackground: org.stampBackground ?? undefined,
       stampColor: org.stampColor ?? undefined,
       altLogo: org.altLogo ?? undefined,

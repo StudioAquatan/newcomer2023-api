@@ -419,6 +419,9 @@ components:
               description: 短い紹介文
             logo:
               $ref: '#/components/schemas/Image'
+            logoFocus:
+              type: boolean
+              description: チェックを入れるとロゴ画像を正方形に切り抜きます．入れない場合は余白により正方形にされます
             stampBackground:
               $ref: '#/components/schemas/Image'
             stampColor:
