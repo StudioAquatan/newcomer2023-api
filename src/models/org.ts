@@ -21,5 +21,7 @@ export class Organization {
     public readonly activeDays: string | null,
     public readonly links: string[],
     public readonly recommendSource: string,
+    // TODO: Ornizationを使用している他のファイルも書き換える
+    public readonly innerFilter?: Record<string, number[]>,
   ) {}
 }

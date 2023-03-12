@@ -13,11 +13,14 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { OrganizationController } from './controllers/orgs';
 import { QuestionController } from './controllers/question';
+import { RecommendController } from './controllers/recommendation/matching';
 import { UserController } from './controllers/users';
 import { UserTokenController } from './controllers/users/token';
 import { VisitController } from './controllers/visits';
 import { OrgnizationRepositoryImpl } from './repositories/orgs/impl';
 import { QuestionRepositoryImpl } from './repositories/question/impl';
+import { RecommendRepositoryImpl } from './repositories/recommendations/impl';
+import { UserAnswerRepositoryImpl } from './repositories/user-answer/impl';
 import { UserRepositoryImpl } from './repositories/users/impl';
 import { VisitTokenRepositoryImpl } from './repositories/visit-token/impl';
 import { VisitRepositoryImpl } from './repositories/visits/impl';
@@ -69,6 +72,16 @@ const createApplication = (env: WorkersEnv) => {
     orgsRepository,
   );
 
+  const recommendationRepository = new RecommendRepositoryImpl(env.DB);
+  const userAnswerRepository = new UserAnswerRepositoryImpl(env.DB);
+  const recommendationController = new RecommendController(
+    userAnswerRepository,
+    recommendationRepository,
+    orgsRepository,
+    questionRepository,
+    visitRepository,
+  );
+
   return {
     userRepository,
     userTokenController,
@@ -80,6 +93,9 @@ const createApplication = (env: WorkersEnv) => {
     visitRepository,
     visitTokenRepository,
     visitController,
+    recommendationRepository,
+    userAnswerRepository,
+    recommendationController,
   };
 };
 
@@ -105,6 +121,8 @@ app.post('/migrate', async (ctx) => {
     visitRepository,
     visitTokenRepository,
     visitController,
+    recommendationRepository,
+    userAnswerRepository,
   } = createApplication(ctx.env);
 
   await userRepository.migrate();
@@ -112,6 +130,9 @@ app.post('/migrate', async (ctx) => {
   await visitTokenRepository.migrate();
 
   await visitController.registerAll();
+
+  await recommendationRepository.migrate();
+  await userAnswerRepository.migrate();
 
   return ctx.json({});
 });
@@ -149,6 +170,16 @@ app.get('/visit', async (ctx) => {
 app.post('/visit/:token', async (ctx) => {
   const { visitController } = createApplication(ctx.env);
   return visitController.recordVisit(ctx);
+});
+
+app.put('/recommendation', async (ctx) => {
+  const { recommendationController } = createApplication(ctx.env);
+  return recommendationController.diagnose(ctx);
+});
+
+app.get('/recommendation', async (ctx) => {
+  const { recommendationController } = createApplication(ctx.env);
+  return recommendationController.getRecommend(ctx);
 });
 
 export default app;
