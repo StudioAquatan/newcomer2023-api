@@ -16,6 +16,7 @@ export class QuestionController {
       questionText: question.questionText,
       questionType: question.questionType,
       answers: question.answers.map((text, id) => ({ id, text })),
+      sort: question.sort,
     };
   }
 

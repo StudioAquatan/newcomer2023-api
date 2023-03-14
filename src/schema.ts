@@ -70,6 +70,7 @@ export namespace components.schemas {
           }),
         )
         .optional(),
+      sort: z.number().optional(),
     }),
     deserializer: z.object({
       id: z.string(),
