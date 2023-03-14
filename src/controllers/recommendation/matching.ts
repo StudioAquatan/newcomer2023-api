@@ -157,9 +157,9 @@ export class RecommendController {
       ];
 
     return context.json(
-      responseType.parse(
-        RecommendController.recommendToResponse(recommendation),
-      ),
+      responseType.parse({
+        recommendation: RecommendController.recommendToResponse(recommendation),
+      }),
     );
   }
 

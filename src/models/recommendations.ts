@@ -120,16 +120,15 @@ export class Recommendation {
 
       let affinity = 0; // 団体との相性
       for (const userAnswer of userAnswerList) {
-        const formIndex = Recommendation.getIndexFromId(
-          userAnswer,
-          questionList,
-        );
-        if (formIndex === -1) {
-          throw new UnknownQuestionError();
+        const question = Recommendation.getQuestion(userAnswer, questionList);
+        if (question.formIndex < 0) {
+          continue;
+        } else {
+          // 回答結果の差の絶対値を加える
+          affinity += Math.abs(
+            userAnswer.answer - orgAnswerList[question.formIndex],
+          );
         }
-
-        // 回答結果の差の絶対値を加える
-        affinity += Math.abs(userAnswer.answer - orgAnswerList[formIndex]);
       }
 
       recommendList.push(
@@ -148,10 +147,10 @@ export class Recommendation {
   }
 
   // questionIdに対応するformIndex求めるメソッド
-  private static getIndexFromId(
+  private static getQuestion(
     userAnswer: QuestionResult,
     questionList: Question[],
-  ): number {
+  ): Question {
     const userQuestionId = userAnswer.questionId;
 
     // 質問一覧からIDが一致する質問を探す
@@ -160,10 +159,9 @@ export class Recommendation {
     });
 
     if (!question) {
-      // IDが一致する質問が見つからなかった
-      return -1;
+      throw new UnknownQuestionError();
     } else {
-      return question.formIndex;
+      return question;
     }
   }
 

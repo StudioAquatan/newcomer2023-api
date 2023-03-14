@@ -56,7 +56,7 @@ export class RecommendRepositoryImpl implements RecommendRepository {
     const selectResult = await selectStmt.all<RecommendResult>();
     if (!selectResult.success) {
       throw new Error(`Failed to fetch recommend: ${selectResult.error}`);
-    } else if (!selectResult.results) {
+    } else if (!selectResult.results?.[0]) {
       throw new NoRecommendError('Recommendation is not found');
     }
 
