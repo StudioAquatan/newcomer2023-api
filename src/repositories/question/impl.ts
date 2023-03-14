@@ -8,6 +8,7 @@ interface Content extends NewtContentBase {
   answers: string;
   formIndex?: number;
   sort: number;
+  filterId?: string;
 }
 export class QuestionRepositoryImpl implements QuestionRepository {
   constructor(
@@ -49,6 +50,7 @@ export class QuestionRepositoryImpl implements QuestionRepository {
           content.answers.split(/\n/).filter((text) => text !== ''),
           content.formIndex ?? 0,
           content.sort,
+          content.filterId,
         ),
     );
 
