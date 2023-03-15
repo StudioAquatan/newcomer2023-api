@@ -115,14 +115,22 @@ export class Recommendation {
     const recommendList: RecommendItem[] = [];
 
     for (const org of orgList) {
-      // ユーザの回答結果を配列化
+      // 団体の回答結果を配列化
       const orgAnswerList = org.recommendSource.split(',').map(Number);
+      const innerFilter = org.innerFilter ?? {};
 
       let affinity = 0; // 団体との相性
       for (const userAnswer of userAnswerList) {
         const question = Recommendation.getQuestion(userAnswer, questionList);
         if (question.formIndex < 0) {
-          continue;
+          if (
+            question.filterId &&
+            innerFilter[question.filterId] &&
+            !innerFilter[question.filterId].includes(userAnswer.answer)
+          ) {
+            // 絶対にヒットしないようにする
+            affinity += 65535;
+          }
         } else {
           // 回答結果の差の絶対値を加える
           affinity += Math.abs(
