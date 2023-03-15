@@ -209,18 +209,13 @@ export class Recommendation {
 
       // TODO: 団体除外の有無を調べる
 
-      // TODO: 団体除外も含めた4通りの分岐
-      if (!visit) {
-        return item;
-      } else {
-        return new RecommendItem(
-          item.org,
-          item.coefficient,
-          item.isExcluded,
-          true,
-          item.stampSlot,
-        );
-      }
+      return new RecommendItem(
+        item.org,
+        item.coefficient,
+        item.isExcluded,
+        !!visit,
+        item.stampSlot,
+      );
     });
 
     return new Recommendation(checked, this.ignoreCount, this.renewCount);
