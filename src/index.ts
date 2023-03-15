@@ -80,6 +80,7 @@ const createApplication = (env: WorkersEnv) => {
     orgsRepository,
     questionRepository,
     visitRepository,
+    userTokenController,
   );
 
   return {

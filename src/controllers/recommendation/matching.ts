@@ -45,6 +45,7 @@ export class RecommendController {
     private orgRepo: OrgnizationRepository,
     private questionRepo: QuestionRepository,
     private visitRepo: VisitRepository,
+    private userTokenController: UserTokenController,
   ) {}
 
   static recommendToResponse(
@@ -68,7 +69,8 @@ export class RecommendController {
 
   async diagnose(context: Context<HonoEnv>): Promise<Response> {
     // ユーザID(主キー)をヘッダから取得する
-    const userId = UserTokenController.getTokenFromHeader(context);
+    const userToken = UserTokenController.getTokenFromHeader(context);
+    const userId = await this.userTokenController.parseToId(userToken);
 
     // ユーザの回答結果をボディから取得する
     const requestType =
@@ -165,7 +167,8 @@ export class RecommendController {
 
   // 診断結果を取得するメソッド
   async getRecommend(context: Context<HonoEnv>) {
-    const userId = UserTokenController.getTokenFromHeader(context);
+    const userToken = UserTokenController.getTokenFromHeader(context);
+    const userId = await this.userTokenController.parseToId(userToken);
     // クエリパラメータの取得
     const { includeQuestions, includeOrgsContent } = context.req.query();
 
