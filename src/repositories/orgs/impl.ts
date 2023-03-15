@@ -71,7 +71,7 @@ export class OrgnizationRepositoryImpl implements OrgnizationRepository {
       content.activeDays || null,
       content.links.split('\n').filter((l) => !!l),
       content.recommendSource,
-      JSON.parse(content.innerFilter ?? '{}'),
+      JSON.parse(content.innerFilter || '{}'),
     );
   }
 
