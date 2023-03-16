@@ -133,9 +133,11 @@ export class Recommendation {
           }
         } else {
           // 回答結果の差の絶対値を加える
-          affinity += Math.abs(
-            userAnswer.answer - orgAnswerList[question.formIndex],
-          );
+          const answer = userAnswer.answer;
+          const formAnswer = orgAnswerList[question.formIndex] ?? 3;
+          affinity +=
+            Math.abs(answer - formAnswer) *
+            Math.pow(2, (Math.abs(answer - 3) + Math.abs(formAnswer - 3)) / 2);
         }
       }
 
