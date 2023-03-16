@@ -74,8 +74,15 @@ export class RecommendRepositoryImpl implements RecommendRepository {
     uncommited: UncommitedRecommendation,
   ): Promise<SimpleRecommendation> {
     const updateStmt = this.database
-      .prepare('UPDATE recommendation SET orgs = ? WHERE id = ?;')
-      .bind(JSON.stringify(uncommited.orgs), uncommited.userId);
+      .prepare(
+        'UPDATE recommendation SET orgs = ?, renewCount = ?, ignoreCount = ? WHERE id = ?;',
+      )
+      .bind(
+        JSON.stringify(uncommited.orgs),
+        uncommited.renewCount,
+        uncommited.ignoreCount,
+        uncommited.userId,
+      );
 
     const updateResult = await updateStmt.run();
     if (!updateResult.success) {
