@@ -5,3 +5,5 @@ export class Exclusion {
     return orgId === this.orgId;
   }
 }
+
+export class UncommitedExclusion extends Exclusion {}
