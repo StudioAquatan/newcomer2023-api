@@ -210,8 +210,6 @@ export class Recommendation {
         return item.org.id === visit.orgId;
       });
 
-      // TODO: 団体除外の有無を調べる
-
       return new RecommendItem(
         item.org,
         item.coefficient,
@@ -248,6 +246,9 @@ export class Recommendation {
   static arrangeStampSlot(recommendList: RecommendItem[]) {
     // おすすめ団体リストを相性の昇順にソート
     recommendList.sort((a, b) => {
+      if (a.isExcluded && b.isExcluded) return 0;
+      if (a.isExcluded) return 1;
+      if (b.isExcluded) return -1;
       return a.coefficient - b.coefficient;
     });
 
