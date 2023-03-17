@@ -234,7 +234,7 @@ export class RecommendController {
     const exclusionList = await this.exclusionRepo.getByUser(userId);
     const visitList = await this.visitRepo.getAllVisit(userId);
 
-    const postRecommendation = recommendation
+    let postRecommendation = recommendation
       .applyExclusion(exclusionList)
       .checkVisitedOrg(visitList);
 
@@ -244,11 +244,12 @@ export class RecommendController {
     if (includeOrgsContent) {
       // 団体の詳細を含める
       const orgList = await this.orgRepo.getAll();
-      recommendation = recommendation.replaceOrgsContent(orgList);
+      postRecommendation = postRecommendation.replaceOrgsContent(orgList);
     }
 
     const fullInfo: FullRecommendInfo = {
-      recommendation: RecommendController.recommendToResponse(recommendation),
+      recommendation:
+        RecommendController.recommendToResponse(postRecommendation),
     };
 
     if (includeQuestions) {
