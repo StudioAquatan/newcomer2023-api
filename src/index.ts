@@ -110,9 +110,10 @@ app.use(
   '*',
   cors({
     origin(origin) {
-      return origin.includes('//localhost') || origin.includes('-dev.pages.dev')
+      return origin.includes('//localhost') ||
+        origin.includes('irodori-newcomer2023.pages.dev')
         ? origin
-        : 'https://irodori-newcomer-2023.pages.dev';
+        : 'https://irodori-newcomer2023.pages.dev';
     },
     credentials: true,
     allowHeaders: ['Authorization', 'Content-Type'],
