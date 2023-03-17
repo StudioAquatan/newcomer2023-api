@@ -240,7 +240,8 @@ export class Recommendation {
       );
     });
 
-    return new Recommendation(applied, this.ignoreCount, this.renewCount);
+    // TODO: カウント方式の再考
+    return new Recommendation(applied, exclusionList.length, this.renewCount);
   }
 
   // スタンプカードの配置を決めるメソッド

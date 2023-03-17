@@ -190,4 +190,13 @@ app.get('/recommendation', async (ctx) => {
   return recommendationController.getRecommend(ctx);
 });
 
+app.delete('/recommendation/:orgId', async (ctx) => {
+  const { recommendationController } = createApplication(ctx.env);
+  return recommendationController.excludeOrg(ctx);
+});
+
+app.patch('/recommendation/:orgId', async (ctx) => {
+  const { recommendationController } = createApplication(ctx.env);
+  return recommendationController.excludeOrg(ctx);
+});
 export default app;

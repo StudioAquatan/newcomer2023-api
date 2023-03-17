@@ -4,6 +4,7 @@ import { HTTPException } from 'hono/http-exception';
 import { z } from 'zod';
 import { HonoEnv } from '../..';
 import { RecommendationMax, RecommendationMaxIgnore } from '../../config';
+import { UncommitedExclusion } from '../../models/exclusion';
 import { Organization } from '../../models/org';
 import { Question } from '../../models/question';
 import {
@@ -14,7 +15,10 @@ import {
   UncommitedRecommendation,
 } from '../../models/recommendations';
 import { QuestionResult, UncommitedUserAnswer } from '../../models/user-answer';
-import { ExclusionRepository } from '../../repositories/exclusion/repository';
+import {
+  AlreadyExcludedError,
+  ExclusionRepository,
+} from '../../repositories/exclusion/repository';
 import { OrgnizationRepository } from '../../repositories/orgs/repository';
 import { QuestionRepository } from '../../repositories/question/repository';
 import {
@@ -262,5 +266,97 @@ export class RecommendController {
       ];
 
     return responseType.parse(fullInfo);
+  }
+
+  // TODO: 無駄な処理が多い
+  async excludeOrg(context: Context<HonoEnv, '/recommendation/:orgId'>) {
+    const userToken = UserTokenController.getTokenFromHeader(context);
+    const userId = await this.userTokenController.parseToId(userToken);
+    // クエリパラメータの取得
+    const { includeQuestions, includeOrgsContent } = context.req.query();
+
+    // 診断済みじゃないと受け付けない
+    let storedRecommend: SimpleRecommendation;
+    try {
+      storedRecommend = await this.recommendRepo.fetchRecommend(userId);
+    } catch (error) {
+      console.error(error);
+
+      if (error instanceof NoRecommendError) {
+        throw new HTTPException(404, { message: 'Not Yet Diagnosed' });
+      }
+
+      throw new HTTPException(500);
+    }
+
+    // 団体情報を取得して突き合わせる(存在チェック)
+    const orgId = context.req.param('orgId');
+    try {
+      await this.orgRepo.getById(orgId);
+    } catch (error) {
+      throw new HTTPException(404, { message: 'Org not found' });
+    }
+
+    // 除外情報を取得
+    let exclusionList = await this.exclusionRepo.getByUser(userId);
+
+    // 処理を分岐
+    if (context.req.method.toLowerCase() === 'delete') {
+      // 除外チェック
+      if (exclusionList.length >= RecommendationMaxIgnore) {
+        throw new HTTPException(429, { message: 'Exclusion limit exceeded' });
+      }
+
+      // 実際に除外DBへ
+      const exclusion = new UncommitedExclusion(userId, orgId);
+      try {
+        const commitedExclusion = await this.exclusionRepo.create(exclusion);
+
+        // TODO: mutable!!!!
+        exclusionList.push(commitedExclusion);
+      } catch (e) {
+        if (e instanceof AlreadyExcludedError) {
+          throw new HTTPException(400, { message: 'Already excluded' });
+        }
+
+        console.error(e);
+        throw new HTTPException(500);
+      }
+    } else {
+      // 除外解除
+      const exclusion = exclusionList.find(({ orgId: id }) => id === orgId);
+
+      if (exclusion) await this.exclusionRepo.delete(exclusion);
+
+      // TODO: mutable!!!!
+      exclusionList = exclusionList.filter(({ orgId: id }) => id !== orgId);
+    }
+
+    const recommendList: RecommendItem[] = [];
+    for (const org of storedRecommend.orgs) {
+      recommendList.push(
+        new RecommendItem(
+          { id: org.orgId },
+          org.coefficient,
+          /* isVisited = */ false,
+          /* isExcluded = */ false,
+          /* stampSlot = */ -1,
+        ),
+      );
+    }
+
+    const recommendation = new Recommendation(
+      recommendList,
+      storedRecommend.ignoreCount,
+      storedRecommend.renewCount,
+    );
+    const proceedRecommendation = await this.postProcessRecommendation(
+      recommendation,
+      userId,
+      !!includeOrgsContent,
+      !!includeQuestions,
+    );
+
+    return context.json(proceedRecommendation);
   }
 }
