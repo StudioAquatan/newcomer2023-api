@@ -14,6 +14,7 @@ import {
   UncommitedRecommendation,
 } from '../../models/recommendations';
 import { QuestionResult, UncommitedUserAnswer } from '../../models/user-answer';
+import { ExclusionRepository } from '../../repositories/exclusion/repository';
 import { OrgnizationRepository } from '../../repositories/orgs/repository';
 import { QuestionRepository } from '../../repositories/question/repository';
 import {
@@ -29,7 +30,11 @@ import { UserTokenController } from '../users/token';
 type FullRecommendInfo = {
   recommendation: Omit<
     Recommendation,
-    'ignoreCount' | 'renewCount' | 'replaceOrgsContent' | 'checkVisitedOrg'
+    | 'ignoreCount'
+    | 'renewCount'
+    | 'replaceOrgsContent'
+    | 'checkVisitedOrg'
+    | 'applyExclusion'
   > & {
     ignoreRemains: number;
     renewRemains: number;
@@ -46,6 +51,7 @@ export class RecommendController {
     private orgRepo: OrgnizationRepository,
     private questionRepo: QuestionRepository,
     private visitRepo: VisitRepository,
+    private exclusionRepo: ExclusionRepository,
     private userTokenController: UserTokenController,
   ) {}
 
@@ -73,6 +79,8 @@ export class RecommendController {
     const userToken = UserTokenController.getTokenFromHeader(context);
     const userId = await this.userTokenController.parseToId(userToken);
 
+    const { includeQuestions, includeOrgsContent } = context.req.query();
+
     // ユーザの回答結果をボディから取得する
     const requestType =
       operations['put-recommendation-question'].requestBody.content[
@@ -81,7 +89,6 @@ export class RecommendController {
     const userAnswerList: QuestionResult[] = requestType.parse(
       await context.req.json(),
     );
-    // TODO: 学部を尋ねる質問のIDを手がかりにユーザの学部を取得する
 
     // 団体の回答結果を取得する
     const orgList: Organization[] = await this.orgRepo.getAll();
@@ -153,17 +160,14 @@ export class RecommendController {
       committedRecommend.ignoreCount,
       committedRecommend.renewCount,
     );
-
-    const responseType =
-      operations['put-recommendation-question'].responses[200].content[
-        'application/json'
-      ];
-
-    return context.json(
-      responseType.parse({
-        recommendation: RecommendController.recommendToResponse(recommendation),
-      }),
+    const proceedRecommendation = await this.postProcessRecommendation(
+      recommendation,
+      userId,
+      !!includeOrgsContent,
+      !!includeQuestions,
     );
+
+    return context.json(proceedRecommendation);
   }
 
   // 診断結果を取得するメソッド
@@ -201,19 +205,37 @@ export class RecommendController {
       );
     }
 
-    let recommendation = new Recommendation(
+    const recommendation = new Recommendation(
       recommendList,
       storedRecommend.ignoreCount,
       storedRecommend.renewCount,
     );
+    const proceedRecommendation = await this.postProcessRecommendation(
+      recommendation,
+      userId,
+      !!includeOrgsContent,
+      !!includeQuestions,
+    );
 
-    // 訪問済みの団体を調べる
-    // TODO: isExcludedの復元
+    return context.json(proceedRecommendation);
+  }
+
+  private async postProcessRecommendation(
+    recommendation: Recommendation,
+    userId: string,
+    includeOrgsContent: boolean,
+    includeQuestions: boolean,
+  ) {
+    // 除外系適用
+    const exclusionList = await this.exclusionRepo.getByUser(userId);
     const visitList = await this.visitRepo.getAllVisit(userId);
-    recommendation = recommendation.checkVisitedOrg(visitList);
+
+    const postRecommendation = recommendation
+      .applyExclusion(exclusionList)
+      .checkVisitedOrg(visitList);
 
     // スタンプカードの再配置
-    Recommendation.arrangeStampSlot(recommendList);
+    Recommendation.arrangeStampSlot(postRecommendation.orgs);
 
     if (includeOrgsContent) {
       // 団体の詳細を含める
@@ -239,6 +261,6 @@ export class RecommendController {
         'application/json'
       ];
 
-    return context.json(responseType.parse(fullInfo));
+    return responseType.parse(fullInfo);
   }
 }

@@ -1,5 +1,6 @@
 import { RecommendationMax } from '../config';
 import { RecommendController } from '../controllers/recommendation/matching';
+import { Exclusion } from './exclusion';
 import { Organization } from './org';
 import { Question } from './question';
 import { QuestionResult } from './user-answer';
@@ -153,7 +154,6 @@ export class Recommendation {
       );
     }
 
-    Recommendation.arrangeStampSlot(recommendList);
     return recommendList;
   }
 
@@ -215,13 +215,32 @@ export class Recommendation {
       return new RecommendItem(
         item.org,
         item.coefficient,
-        item.isExcluded,
         !!visit,
+        item.isExcluded,
         item.stampSlot,
       );
     });
 
     return new Recommendation(checked, this.ignoreCount, this.renewCount);
+  }
+
+  // 訪問済みの団体を調べるメソッド
+  applyExclusion(exclusionList: Exclusion[]): Recommendation {
+    const applied = this.orgs.map((item) => {
+      const isExcluded = exclusionList.find(({ orgId }) => {
+        return item.org.id === orgId;
+      });
+
+      return new RecommendItem(
+        item.org,
+        item.coefficient,
+        item.isVisited,
+        !!isExcluded,
+        item.stampSlot,
+      );
+    });
+
+    return new Recommendation(applied, this.ignoreCount, this.renewCount);
   }
 
   // スタンプカードの配置を決めるメソッド
@@ -249,5 +268,7 @@ export class Recommendation {
         break;
       }
     }
+
+    return recommendList;
   }
 }
