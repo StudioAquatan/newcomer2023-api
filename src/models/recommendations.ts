@@ -1,3 +1,4 @@
+import { RecommendationMax } from '../config';
 import { RecommendController } from '../controllers/recommendation/matching';
 import { Organization } from './org';
 import { Question } from './question';
@@ -30,7 +31,7 @@ export class SimpleRecommendation {
 
   renewRecommend(newRecommend: RecommendItem[]): UncommitedRecommendation {
     // 診断回数の確認
-    if (this.renewCount >= 5) {
+    if (this.renewCount >= RecommendationMax) {
       throw new DiagnosisExhaustedError();
     }
 

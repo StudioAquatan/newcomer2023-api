@@ -3,6 +3,7 @@ import { Context } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import { z } from 'zod';
 import { HonoEnv } from '../..';
+import { RecommendationMax, RecommendationMaxIgnore } from '../../config';
 import { Organization } from '../../models/org';
 import { Question } from '../../models/question';
 import {
@@ -53,8 +54,8 @@ export class RecommendController {
   ): z.TypeOf<typeof components.schemas.Recommendation.serializer> {
     return {
       orgs: recommendation.orgs,
-      ignoreRemains: 5 - recommendation.ignoreCount,
-      renewRemains: 5 - recommendation.renewCount,
+      ignoreRemains: RecommendationMaxIgnore - recommendation.ignoreCount,
+      renewRemains: RecommendationMax - recommendation.renewCount,
     };
   }
 
