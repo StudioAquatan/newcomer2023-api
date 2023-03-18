@@ -6,5 +6,6 @@ export class Question {
     public readonly answers: string[] = [],
     public readonly formIndex: number,
     public readonly sort: number,
+    public readonly filterId?: string,
   ) {}
 }

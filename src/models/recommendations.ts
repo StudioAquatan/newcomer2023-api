@@ -1,4 +1,6 @@
+import { RecommendationMax } from '../config';
 import { RecommendController } from '../controllers/recommendation/matching';
+import { Exclusion } from './exclusion';
 import { Organization } from './org';
 import { Question } from './question';
 import { QuestionResult } from './user-answer';
@@ -30,7 +32,7 @@ export class SimpleRecommendation {
 
   renewRecommend(newRecommend: RecommendItem[]): UncommitedRecommendation {
     // 診断回数の確認
-    if (this.renewCount >= 5) {
+    if (this.renewCount >= RecommendationMax) {
       throw new DiagnosisExhaustedError();
     }
 
@@ -115,21 +117,30 @@ export class Recommendation {
     const recommendList: RecommendItem[] = [];
 
     for (const org of orgList) {
-      // ユーザの回答結果を配列化
+      // 団体の回答結果を配列化
       const orgAnswerList = org.recommendSource.split(',').map(Number);
+      const innerFilter = org.innerFilter ?? {};
 
       let affinity = 0; // 団体との相性
       for (const userAnswer of userAnswerList) {
-        const formIndex = Recommendation.getIndexFromId(
-          userAnswer,
-          questionList,
-        );
-        if (formIndex === -1) {
-          throw new UnknownQuestionError();
+        const question = Recommendation.getQuestion(userAnswer, questionList);
+        if (question.formIndex < 0) {
+          if (
+            question.filterId &&
+            innerFilter[question.filterId] &&
+            !innerFilter[question.filterId].includes(userAnswer.answer)
+          ) {
+            // 絶対にヒットしないようにする
+            affinity += 65535;
+          }
+        } else {
+          // 回答結果の差の絶対値を加える
+          const answer = userAnswer.answer;
+          const formAnswer = orgAnswerList[question.formIndex] ?? 3;
+          affinity +=
+            Math.abs(answer - formAnswer) *
+            Math.pow(2, (Math.abs(answer - 3) + Math.abs(formAnswer - 3)) / 2);
         }
-
-        // 回答結果の差の絶対値を加える
-        affinity += Math.abs(userAnswer.answer - orgAnswerList[formIndex]);
       }
 
       recommendList.push(
@@ -143,15 +154,14 @@ export class Recommendation {
       );
     }
 
-    Recommendation.arrangeStampSlot(recommendList);
     return recommendList;
   }
 
   // questionIdに対応するformIndex求めるメソッド
-  private static getIndexFromId(
+  private static getQuestion(
     userAnswer: QuestionResult,
     questionList: Question[],
-  ): number {
+  ): Question {
     const userQuestionId = userAnswer.questionId;
 
     // 質問一覧からIDが一致する質問を探す
@@ -160,10 +170,9 @@ export class Recommendation {
     });
 
     if (!question) {
-      // IDが一致する質問が見つからなかった
-      return -1;
+      throw new UnknownQuestionError();
     } else {
-      return question.formIndex;
+      return question;
     }
   }
 
@@ -201,29 +210,45 @@ export class Recommendation {
         return item.org.id === visit.orgId;
       });
 
-      // TODO: 団体除外の有無を調べる
-
-      // TODO: 団体除外も含めた4通りの分岐
-      if (!visit) {
-        return item;
-      } else {
-        return new RecommendItem(
-          item.org,
-          item.coefficient,
-          item.isExcluded,
-          true,
-          item.stampSlot,
-        );
-      }
+      return new RecommendItem(
+        item.org,
+        item.coefficient,
+        !!visit,
+        item.isExcluded,
+        item.stampSlot,
+      );
     });
 
     return new Recommendation(checked, this.ignoreCount, this.renewCount);
+  }
+
+  // 訪問済みの団体を調べるメソッド
+  applyExclusion(exclusionList: Exclusion[]): Recommendation {
+    const applied = this.orgs.map((item) => {
+      const isExcluded = exclusionList.find(({ orgId }) => {
+        return item.org.id === orgId;
+      });
+
+      return new RecommendItem(
+        item.org,
+        item.coefficient,
+        item.isVisited,
+        !!isExcluded,
+        item.stampSlot,
+      );
+    });
+
+    // TODO: カウント方式の再考
+    return new Recommendation(applied, exclusionList.length, this.renewCount);
   }
 
   // スタンプカードの配置を決めるメソッド
   static arrangeStampSlot(recommendList: RecommendItem[]) {
     // おすすめ団体リストを相性の昇順にソート
     recommendList.sort((a, b) => {
+      if (a.isExcluded && b.isExcluded) return 0;
+      if (a.isExcluded) return 1;
+      if (b.isExcluded) return -1;
       return a.coefficient - b.coefficient;
     });
 
@@ -245,5 +270,7 @@ export class Recommendation {
         break;
       }
     }
+
+    return recommendList;
   }
 }

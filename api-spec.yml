@@ -478,6 +478,9 @@ components:
       properties:
         id:
           type: string
+        sort:
+          type: number
+          description: 並べ替え用整数値
         questionText:
           type: string
           description: 質問文

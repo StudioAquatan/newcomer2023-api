@@ -23,6 +23,7 @@ interface NewtContent {
   activeDays: string;
   links: string;
   recommendSource: string;
+  innerFilter?: string;
 }
 
 export class OrgnizationRepositoryImpl implements OrgnizationRepository {
@@ -70,6 +71,7 @@ export class OrgnizationRepositoryImpl implements OrgnizationRepository {
       content.activeDays || null,
       content.links.split('\n').filter((l) => !!l),
       content.recommendSource,
+      JSON.parse(content.innerFilter || '{}'),
     );
   }
 

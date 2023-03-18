@@ -17,6 +17,7 @@ import { RecommendController } from './controllers/recommendation/matching';
 import { UserController } from './controllers/users';
 import { UserTokenController } from './controllers/users/token';
 import { VisitController } from './controllers/visits';
+import { ExclusionRepositoryImpl } from './repositories/exclusion/impl';
 import { OrgnizationRepositoryImpl } from './repositories/orgs/impl';
 import { QuestionRepositoryImpl } from './repositories/question/impl';
 import { RecommendRepositoryImpl } from './repositories/recommendations/impl';
@@ -74,12 +75,15 @@ const createApplication = (env: WorkersEnv) => {
 
   const recommendationRepository = new RecommendRepositoryImpl(env.DB);
   const userAnswerRepository = new UserAnswerRepositoryImpl(env.DB);
+  const exlusionRepository = new ExclusionRepositoryImpl(env.DB);
   const recommendationController = new RecommendController(
     userAnswerRepository,
     recommendationRepository,
     orgsRepository,
     questionRepository,
     visitRepository,
+    exlusionRepository,
+    userTokenController,
   );
 
   return {
@@ -96,6 +100,7 @@ const createApplication = (env: WorkersEnv) => {
     recommendationRepository,
     userAnswerRepository,
     recommendationController,
+    exlusionRepository,
   };
 };
 
@@ -105,9 +110,10 @@ app.use(
   '*',
   cors({
     origin(origin) {
-      return origin.includes('//localhost') || origin.includes('-dev.pages.dev')
+      return origin.includes('//localhost') ||
+        origin.includes('irodori-newcomer2023.pages.dev')
         ? origin
-        : 'https://irodori-newcomer-2023.pages.dev';
+        : 'https://irodori-newcomer2023.pages.dev';
     },
     credentials: true,
     allowHeaders: ['Authorization', 'Content-Type'],
@@ -123,6 +129,7 @@ app.post('/migrate', async (ctx) => {
     visitController,
     recommendationRepository,
     userAnswerRepository,
+    exlusionRepository,
   } = createApplication(ctx.env);
 
   await userRepository.migrate();
@@ -133,6 +140,8 @@ app.post('/migrate', async (ctx) => {
 
   await recommendationRepository.migrate();
   await userAnswerRepository.migrate();
+
+  await exlusionRepository.migrate();
 
   return ctx.json({});
 });
@@ -182,4 +191,13 @@ app.get('/recommendation', async (ctx) => {
   return recommendationController.getRecommend(ctx);
 });
 
+app.delete('/recommendation/:orgId', async (ctx) => {
+  const { recommendationController } = createApplication(ctx.env);
+  return recommendationController.excludeOrg(ctx);
+});
+
+app.patch('/recommendation/:orgId', async (ctx) => {
+  const { recommendationController } = createApplication(ctx.env);
+  return recommendationController.excludeOrg(ctx);
+});
 export default app;

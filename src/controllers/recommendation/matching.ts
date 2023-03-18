@@ -3,6 +3,8 @@ import { Context } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import { z } from 'zod';
 import { HonoEnv } from '../..';
+import { RecommendationMax, RecommendationMaxIgnore } from '../../config';
+import { UncommitedExclusion } from '../../models/exclusion';
 import { Organization } from '../../models/org';
 import { Question } from '../../models/question';
 import {
@@ -13,6 +15,10 @@ import {
   UncommitedRecommendation,
 } from '../../models/recommendations';
 import { QuestionResult, UncommitedUserAnswer } from '../../models/user-answer';
+import {
+  AlreadyExcludedError,
+  ExclusionRepository,
+} from '../../repositories/exclusion/repository';
 import { OrgnizationRepository } from '../../repositories/orgs/repository';
 import { QuestionRepository } from '../../repositories/question/repository';
 import {
@@ -28,7 +34,11 @@ import { UserTokenController } from '../users/token';
 type FullRecommendInfo = {
   recommendation: Omit<
     Recommendation,
-    'ignoreCount' | 'renewCount' | 'replaceOrgsContent' | 'checkVisitedOrg'
+    | 'ignoreCount'
+    | 'renewCount'
+    | 'replaceOrgsContent'
+    | 'checkVisitedOrg'
+    | 'applyExclusion'
   > & {
     ignoreRemains: number;
     renewRemains: number;
@@ -45,6 +55,8 @@ export class RecommendController {
     private orgRepo: OrgnizationRepository,
     private questionRepo: QuestionRepository,
     private visitRepo: VisitRepository,
+    private exclusionRepo: ExclusionRepository,
+    private userTokenController: UserTokenController,
   ) {}
 
   static recommendToResponse(
@@ -52,8 +64,8 @@ export class RecommendController {
   ): z.TypeOf<typeof components.schemas.Recommendation.serializer> {
     return {
       orgs: recommendation.orgs,
-      ignoreRemains: 5 - recommendation.ignoreCount,
-      renewRemains: 5 - recommendation.renewCount,
+      ignoreRemains: RecommendationMaxIgnore - recommendation.ignoreCount,
+      renewRemains: RecommendationMax - recommendation.renewCount,
     };
   }
 
@@ -68,7 +80,10 @@ export class RecommendController {
 
   async diagnose(context: Context<HonoEnv>): Promise<Response> {
     // ユーザID(主キー)をヘッダから取得する
-    const userId = UserTokenController.getTokenFromHeader(context);
+    const userToken = UserTokenController.getTokenFromHeader(context);
+    const userId = await this.userTokenController.parseToId(userToken);
+
+    const { includeQuestions, includeOrgsContent } = context.req.query();
 
     // ユーザの回答結果をボディから取得する
     const requestType =
@@ -78,7 +93,6 @@ export class RecommendController {
     const userAnswerList: QuestionResult[] = requestType.parse(
       await context.req.json(),
     );
-    // TODO: 学部を尋ねる質問のIDを手がかりにユーザの学部を取得する
 
     // 団体の回答結果を取得する
     const orgList: Organization[] = await this.orgRepo.getAll();
@@ -150,22 +164,20 @@ export class RecommendController {
       committedRecommend.ignoreCount,
       committedRecommend.renewCount,
     );
-
-    const responseType =
-      operations['put-recommendation-question'].responses[200].content[
-        'application/json'
-      ];
-
-    return context.json(
-      responseType.parse(
-        RecommendController.recommendToResponse(recommendation),
-      ),
+    const proceedRecommendation = await this.postProcessRecommendation(
+      recommendation,
+      userId,
+      !!includeOrgsContent,
+      !!includeQuestions,
     );
+
+    return context.json(proceedRecommendation);
   }
 
   // 診断結果を取得するメソッド
   async getRecommend(context: Context<HonoEnv>) {
-    const userId = UserTokenController.getTokenFromHeader(context);
+    const userToken = UserTokenController.getTokenFromHeader(context);
+    const userId = await this.userTokenController.parseToId(userToken);
     // クエリパラメータの取得
     const { includeQuestions, includeOrgsContent } = context.req.query();
 
@@ -197,28 +209,47 @@ export class RecommendController {
       );
     }
 
-    let recommendation = new Recommendation(
+    const recommendation = new Recommendation(
       recommendList,
       storedRecommend.ignoreCount,
       storedRecommend.renewCount,
     );
+    const proceedRecommendation = await this.postProcessRecommendation(
+      recommendation,
+      userId,
+      !!includeOrgsContent,
+      !!includeQuestions,
+    );
 
-    // 訪問済みの団体を調べる
-    // TODO: isExcludedの復元
+    return context.json(proceedRecommendation);
+  }
+
+  private async postProcessRecommendation(
+    recommendation: Recommendation,
+    userId: string,
+    includeOrgsContent: boolean,
+    includeQuestions: boolean,
+  ) {
+    // 除外系適用
+    const exclusionList = await this.exclusionRepo.getByUser(userId);
     const visitList = await this.visitRepo.getAllVisit(userId);
-    recommendation = recommendation.checkVisitedOrg(visitList);
+
+    let postRecommendation = recommendation
+      .applyExclusion(exclusionList)
+      .checkVisitedOrg(visitList);
 
     // スタンプカードの再配置
-    Recommendation.arrangeStampSlot(recommendList);
+    Recommendation.arrangeStampSlot(postRecommendation.orgs);
 
     if (includeOrgsContent) {
       // 団体の詳細を含める
       const orgList = await this.orgRepo.getAll();
-      recommendation = recommendation.replaceOrgsContent(orgList);
+      postRecommendation = postRecommendation.replaceOrgsContent(orgList);
     }
 
     const fullInfo: FullRecommendInfo = {
-      recommendation: RecommendController.recommendToResponse(recommendation),
+      recommendation:
+        RecommendController.recommendToResponse(postRecommendation),
     };
 
     if (includeQuestions) {
@@ -235,6 +266,98 @@ export class RecommendController {
         'application/json'
       ];
 
-    return context.json(responseType.parse(fullInfo));
+    return responseType.parse(fullInfo);
+  }
+
+  // TODO: 無駄な処理が多い
+  async excludeOrg(context: Context<HonoEnv, '/recommendation/:orgId'>) {
+    const userToken = UserTokenController.getTokenFromHeader(context);
+    const userId = await this.userTokenController.parseToId(userToken);
+    // クエリパラメータの取得
+    const { includeQuestions, includeOrgsContent } = context.req.query();
+
+    // 診断済みじゃないと受け付けない
+    let storedRecommend: SimpleRecommendation;
+    try {
+      storedRecommend = await this.recommendRepo.fetchRecommend(userId);
+    } catch (error) {
+      console.error(error);
+
+      if (error instanceof NoRecommendError) {
+        throw new HTTPException(404, { message: 'Not Yet Diagnosed' });
+      }
+
+      throw new HTTPException(500);
+    }
+
+    // 団体情報を取得して突き合わせる(存在チェック)
+    const orgId = context.req.param('orgId');
+    try {
+      await this.orgRepo.getById(orgId);
+    } catch (error) {
+      throw new HTTPException(404, { message: 'Org not found' });
+    }
+
+    // 除外情報を取得
+    let exclusionList = await this.exclusionRepo.getByUser(userId);
+
+    // 処理を分岐
+    if (context.req.method.toLowerCase() === 'delete') {
+      // 除外チェック
+      if (exclusionList.length >= RecommendationMaxIgnore) {
+        throw new HTTPException(429, { message: 'Exclusion limit exceeded' });
+      }
+
+      // 実際に除外DBへ
+      const exclusion = new UncommitedExclusion(userId, orgId);
+      try {
+        const commitedExclusion = await this.exclusionRepo.create(exclusion);
+
+        // TODO: mutable!!!!
+        exclusionList.push(commitedExclusion);
+      } catch (e) {
+        if (e instanceof AlreadyExcludedError) {
+          throw new HTTPException(400, { message: 'Already excluded' });
+        }
+
+        console.error(e);
+        throw new HTTPException(500);
+      }
+    } else {
+      // 除外解除
+      const exclusion = exclusionList.find(({ orgId: id }) => id === orgId);
+
+      if (exclusion) await this.exclusionRepo.delete(exclusion);
+
+      // TODO: mutable!!!!
+      exclusionList = exclusionList.filter(({ orgId: id }) => id !== orgId);
+    }
+
+    const recommendList: RecommendItem[] = [];
+    for (const org of storedRecommend.orgs) {
+      recommendList.push(
+        new RecommendItem(
+          { id: org.orgId },
+          org.coefficient,
+          /* isVisited = */ false,
+          /* isExcluded = */ false,
+          /* stampSlot = */ -1,
+        ),
+      );
+    }
+
+    const recommendation = new Recommendation(
+      recommendList,
+      storedRecommend.ignoreCount,
+      storedRecommend.renewCount,
+    );
+    const proceedRecommendation = await this.postProcessRecommendation(
+      recommendation,
+      userId,
+      !!includeOrgsContent,
+      !!includeQuestions,
+    );
+
+    return context.json(proceedRecommendation);
   }
 }
