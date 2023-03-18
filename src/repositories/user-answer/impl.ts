@@ -30,7 +30,8 @@ export class UserAnswerRepositoryImpl implements UserAnswerRepository {
     const insertResult = await insertStmt.run();
     if (!insertResult.success) {
       // 既に登録されている
-      throw new Error(`Failed to insert user's answer: ${insertResult.error}`);
+      // TODO: ぜんぶトランザクションが無いのが悪い
+      return this.updateUserAnswer(uncommited);
     }
 
     return new UserAnswer(uncommited.userId, uncommited.answers);
