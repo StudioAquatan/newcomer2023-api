@@ -23,6 +23,10 @@ export class QuestionRepositoryImpl implements QuestionRepository {
       headers: {
         Authorization: `Bearer ${this.apiKey}`,
       },
+      cf: {
+        cacheTtl: 3600,
+        cacheEverything: true,
+      },
     });
 
     return await response.json<NewtContentsResponse<Content>>();
