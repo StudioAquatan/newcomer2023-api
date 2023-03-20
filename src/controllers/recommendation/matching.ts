@@ -57,6 +57,7 @@ export class RecommendController {
     private visitRepo: VisitRepository,
     private exclusionRepo: ExclusionRepository,
     private userTokenController: UserTokenController,
+    private ogpQueue: Queue,
   ) {}
 
   static recommendToResponse(
@@ -158,6 +159,8 @@ export class RecommendController {
         uncommitedRecommend,
       );
     }
+
+    await this.ogpQueue.send(userId);
 
     const recommendation = new Recommendation(
       recommendList,
@@ -345,6 +348,8 @@ export class RecommendController {
         ),
       );
     }
+
+    await this.ogpQueue.send(userId);
 
     const recommendation = new Recommendation(
       recommendList,

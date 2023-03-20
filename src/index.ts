@@ -35,6 +35,7 @@ export type WorkersEnv = {
   NEWT_SPACE_UID: string;
   NEWT_APP_UID: string;
   NEWT_API_KEY: string;
+  OGP_QUEUE: Queue;
 };
 
 export type HonoEnv = { Bindings: WorkersEnv };
@@ -84,6 +85,7 @@ const createApplication = (env: WorkersEnv) => {
     visitRepository,
     exlusionRepository,
     userTokenController,
+    env.OGP_QUEUE,
   );
 
   return {
