@@ -25,6 +25,7 @@ export class QuestionController {
 
     const responseType =
       operations['get-questions'].responses[200].content['application/json'];
+    ctx.header('Cache-Control', 'public, max-age=3600');
     return ctx.json(responseType.parse(list.map(this.toResponse)));
   }
 }

@@ -31,6 +31,7 @@ export class OrganizationController {
 
     const responseType =
       operations['get-orgs'].responses[200].content['application/json'];
+    ctx.header('Cache-Control', 'public, max-age=3600');
     return ctx.json(
       responseType.parse(orgs.map(OrganizationController.toResponse)),
     );
