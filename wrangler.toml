@@ -24,6 +24,14 @@ JWT_ISSUER = "newcomer2023-dev"
 NEWT_SPACE_UID = "kit-newcomer-2023"
 NEWT_APP_UID = "clubs"
 
+[[ queues.producers ]]
+queue = "newcomer2023-ogp-queue"
+binding = "OGP_QUEUE"
+
+[[ env.development.queues.producers ]]
+queue = "newcomer2023-ogp-queue-dev"
+binding = "OGP_QUEUE"
+
 [[ env.development.d1_databases ]]
 binding = "DB"
 database_name = "newcomer2023-dev"
