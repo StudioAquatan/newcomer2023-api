@@ -173,12 +173,12 @@ app.get('/questions', async (ctx) => {
   return questionController.getQuestionList(ctx);
 });
 
-app.get('/visit', async (ctx) => {
+app.get('/visits', async (ctx) => {
   const { visitController } = createApplication(ctx.env);
   return visitController.getAllVisit(ctx);
 });
 
-app.post('/visit/:token', async (ctx) => {
+app.post('/visits/:token', async (ctx) => {
   const { visitController } = createApplication(ctx.env);
   return visitController.recordVisit(ctx);
 });

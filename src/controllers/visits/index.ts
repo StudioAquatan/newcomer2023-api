@@ -37,7 +37,9 @@ export class VisitController {
     };
   }
 
-  async recordVisit(ctx: Context<HonoEnv, '/visit/:token'>): Promise<Response> {
+  async recordVisit(
+    ctx: Context<HonoEnv, '/visits/:token'>,
+  ): Promise<Response> {
     const userToken = UserTokenController.getTokenFromHeader(ctx);
     const userId = await this.userTokenController.parseToId(userToken);
 
