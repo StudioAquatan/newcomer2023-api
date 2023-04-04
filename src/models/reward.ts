@@ -9,6 +9,7 @@ export class InvalidRewardTokenError {}
 
 export class Reward {
   constructor(
+    public readonly id: string,
     public readonly userId: string,
     public readonly amount: number,
     public readonly consumed: boolean,
@@ -42,7 +43,7 @@ export class Reward {
       throw new InsufficientVisitError();
     }
 
-    return new Reward(userId, amount, false, v4());
+    return new Reward(v4(), userId, amount, false, v4());
   }
 
   consume(token: string) {
@@ -50,6 +51,6 @@ export class Reward {
       throw new InvalidRewardTokenError();
     }
 
-    return new Reward(this.userId, this.amount, true, token);
+    return new Reward(this.id, this.userId, this.amount, true, token);
   }
 }
