@@ -113,7 +113,7 @@ app.use(
   cors({
     origin(origin) {
       return origin.includes('//localhost') ||
-        origin.includes('irodori-newcomer2023.pages.dev')
+        origin.includes('irodori-newcomer2023')
         ? origin
         : 'https://irodori-newcomer2023.pages.dev';
     },
